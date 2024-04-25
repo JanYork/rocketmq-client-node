@@ -2,7 +2,7 @@ import IGrpcServiceDiscovery from "@/interface/grpc-discovery.interface";
 import {IGrpcConfig} from "@/interface/grpc-config.interface";
 
 /**
- * Default service discovery implementation
+ * Default service discover implementation
  *
  * @export
  * @class DefaultServiceDiscovery
@@ -13,7 +13,7 @@ export default class DefaultServiceDiscovery implements IGrpcServiceDiscovery {
      * Creates an instance of DefaultServiceDiscovery.
      * @private
      */
-    private config: IGrpcConfig;
+    private readonly config: IGrpcConfig;
 
     constructor(config: IGrpcConfig) {
         this.config = config;
@@ -29,7 +29,7 @@ export default class DefaultServiceDiscovery implements IGrpcServiceDiscovery {
             return { host: this.config.host, port: this.config.port };
         } catch (error) {
             console.error('Failed to discover service', error);
-            throw new Error('Service discovery failed');
+            throw new Error('Service discover failed');
         }
     }
 }
