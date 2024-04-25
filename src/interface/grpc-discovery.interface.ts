@@ -1,5 +1,5 @@
 /**
- * Interface for service discovery
+ * Interface for service discover
  *
  * @export
  * @interface IGrpcServiceDiscovery

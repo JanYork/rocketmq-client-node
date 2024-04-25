@@ -9,7 +9,7 @@ export default abstract class BaseGrpcClient implements IGrpcClient {
      * gRPC 客户端实例。
      * @protected
      */
-    protected client: grpc.Client;
+    protected readonly client: grpc.Client;
 
     /**
      * 构造函数，初始化 gRPC 客户端。
@@ -22,12 +22,34 @@ export default abstract class BaseGrpcClient implements IGrpcClient {
         this.client = new serviceProto(address, credentials);
     }
 
+    /**
+     * 发起一元调用。
+     *
+     * @param method
+     * @param requestData
+     */
     abstract unaryCall<TRequest, TResponse>(method: string, requestData: TRequest): Promise<TResponse>;
 
+    /**
+     * 发起服务器流式调用。
+     *
+     * @param method
+     * @param requestData
+     */
     abstract serverStreamingCall<TRequest, TResponse>(method: string, requestData: TRequest): grpc.ClientReadableStream<TResponse>;
 
+    /**
+     * 发起客户端流式调用。
+     *
+     * @param method
+     */
     abstract clientStreamingCall<TRequest, TResponse>(method: string): grpc.ClientWritableStream<TRequest>;
 
+    /**
+     * 发起双向流式调用。
+     *
+     * @param method
+     */
     abstract duplexStreamingCall<TRequest, TResponse>(method: string): grpc.ClientDuplexStream<TRequest, TResponse>;
 
     /**

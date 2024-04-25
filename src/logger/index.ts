@@ -1,4 +1,4 @@
-import {ILogger} from "@/interface/grpc-logger.interface";
+import {ILogger, LogEntry} from "@/interface/grpc-logger.interface";
 import ConsoleLogger from "./console.logger";
 import LogLevel from "@/enum/logger.enum";
 
@@ -39,7 +39,7 @@ export default class Logger {
      * @private
      */
     private shouldLog(level: LogLevel): boolean {
-        return level >= this.level;
+        return level >= this.level && level !== LogLevel.OFF;
     }
 
     /**
@@ -54,42 +54,34 @@ export default class Logger {
     }
 
     public info(
-        message: string,
-        context?: Record<string, unknown>,
-        error?: Error
+        log: LogEntry
     ): void {
         if (this.shouldLog(LogLevel.INFO)) {
-            this.instance.info({message, context, error});
+            this.instance.info(log);
         }
     }
 
     public debug(
-        message: string,
-        context?: Record<string, unknown>,
-        error?: Error
+        log: LogEntry
     ): void {
         if (this.shouldLog(LogLevel.DEBUG)) {
-            this.instance.debug({message, context, error});
+            this.instance.debug(log);
         }
     }
 
     public warn(
-        message: string,
-        context?: Record<string, unknown>,
-        error?: Error
+        log: LogEntry
     ): void {
         if (this.shouldLog(LogLevel.WARN)) {
-            this.instance.warn({message, context, error});
+            this.instance.warn(log);
         }
     }
 
     public error(
-        message: string,
-        context?: Record<string, unknown>,
-        error?: Error
+        log: LogEntry
     ): void {
         if (this.shouldLog(LogLevel.ERROR)) {
-            this.instance.error({message, context, error});
+            this.instance.error(log);
         }
     }
 
