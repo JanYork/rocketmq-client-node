@@ -1,0 +1,28 @@
+{
+  "name": "rocketmq-grpc-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "gen-grpc": "chmod +x ./src/script/generate_grpc.sh && ./src/script/generate_grpc.sh",
+    "build": "tsc"
+  },
+  "author": "JanYork",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.10.6",
+    "@grpc/proto-loader": "^0.7.12",
+    "dotenv": "^16.4.5",
+    "google-protobuf": "^3.21.2"
+  },
+  "devDependencies": {
+    "@types/google-protobuf": "^3.15.12",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.12.7",
+    "grpc-tools": "^1.12.4",
+    "grpc_tools_node_protoc_ts": "^5.3.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.4.5"
+  }
+}

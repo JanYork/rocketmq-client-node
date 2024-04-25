@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "target": "ES2022",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "moduleResolution": "Node"
+  },
+  "include": ["**/*"],
+  "exclude": ["node_modules", "dist", "rpc"]
+}
