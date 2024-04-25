@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package apache.rocketmq.v2;
+
+// 设置相关的选项以便于与各种编程语言的集成
+option cc_enable_arenas = true;  // 启用C++ API的arena特性，提高内存分配性能
+option csharp_namespace = "Apache.Rocketmq.V2";  // 指定C#的命名空间
+option java_multiple_files = true;  // Java代码生成时，每个message生成到独立的文件
+option java_package = "apache.rocketmq.v2";  // 指定Java的包名
+option java_generate_equals_and_hash = true;  // Java生成代码包含equals()和hashCode()方法
+option java_string_check_utf8 = true;  // 在Java中检查字符串字段是否是有效的UTF-8
+option java_outer_classname = "MQAdmin";  // 指定生成Java类的外部类名
+
+// 定义修改日志级别的请求消息
+message ChangeLogLevelRequest {
+  // 定义日志级别的枚举
+  enum Level {
+    TRACE = 0;  // 跟踪级别，最详细的日志
+    DEBUG = 1;  // 调试级别，用于调试应用
+    INFO = 2;   // 信息级别，重要的运行时事件
+    WARN = 3;   // 警告级别，潜在的问题
+    ERROR = 4;  // 错误级别，严重问题
+  }
+  Level level = 1;  // 日志级别字段，设定日志输出级别
+}
+
+// 定义修改日志级别的响应消息
+message ChangeLogLevelResponse {
+  string remark = 1;  // 响应中包含的备注信息
+}
+
+// 定义服务接口
+service Admin {
+  // 定义一个RPC方法，用于修改日志级别
+  rpc ChangeLogLevel(ChangeLogLevelRequest) returns (ChangeLogLevelResponse) {}
+}

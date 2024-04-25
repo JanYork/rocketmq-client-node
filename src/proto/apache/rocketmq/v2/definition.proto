@@ -1,0 +1,325 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package apache.rocketmq.v2;
+
+option csharp_namespace = "Apache.Rocketmq.V2";
+option java_multiple_files = true;
+option java_package = "apache.rocketmq.v2";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+option java_outer_classname = "MQDomain";
+
+// 事务解决方案枚举，用于消息事务的提交或回滚
+enum TransactionResolution {
+  TRANSACTION_RESOLUTION_UNSPECIFIED = 0;  // 未指定，默认值
+  COMMIT = 1;  // 提交事务
+  ROLLBACK = 2;  // 回滚事务
+}
+
+// 事务来源枚举，指明事务的发起源
+enum TransactionSource {
+  SOURCE_UNSPECIFIED = 0;  // 未指定
+  SOURCE_CLIENT = 1;  // 由客户端发起
+  SOURCE_SERVER_CHECK = 2;  // 由服务器端检查触发
+}
+
+// 权限枚举，定义对资源的访问权限级别
+enum Permission {
+  PERMISSION_UNSPECIFIED = 0;  // 未指定
+  NONE = 1;  // 无权限
+  READ = 2;  // 读权限
+  WRITE = 3;  // 写权限
+  READ_WRITE = 4;  // 读写权限
+}
+
+// 过滤类型枚举，定义消息过滤的类型
+enum FilterType {
+  FILTER_TYPE_UNSPECIFIED = 0;  // 未指定
+  TAG = 1;  // 标签过滤
+  SQL = 2;  // SQL表达式过滤
+}
+
+// 过滤表达式消息结构，用于消息订阅时的过滤
+message FilterExpression {
+  FilterType type = 1;  // 过滤类型
+  string expression = 2;  // 过滤表达式内容
+}
+
+// 重试策略消息结构，定义消息发送失败时的重试机制
+message RetryPolicy {
+  int32 max_attempts = 1;  // 最大尝试次数
+  oneof strategy {
+    ExponentialBackoff exponential_backoff = 2;  // 指数退避策略
+    CustomizedBackoff customized_backoff = 3;  // 自定义退避策略
+  }
+}
+
+// 指数退避策略，用于定义重试间隔的增长模式
+message ExponentialBackoff {
+  google.protobuf.Duration initial = 1;  // 初始退避时间
+  google.protobuf.Duration max = 2;  // 最大退避时间
+  float multiplier = 3;  // 退避倍数
+}
+
+// 自定义退避策略，允许用户定义一系列具体的退避时间
+message CustomizedBackoff {
+  repeated google.protobuf.Duration next = 1;  // 退避时间序列
+}
+
+// 资源消息结构，定义一个唯一的资源，如主题等
+message Resource {
+  string resource_namespace = 1;  // 资源所在的命名空间
+  string name = 2;  // 资源的唯一名称
+}
+
+// 订阅条目消息结构，定义单个订阅项，包括主题和过滤表达式
+message SubscriptionEntry {
+  Resource topic = 1;  // 订阅的主题
+  FilterExpression expression = 2;  // 应用于该主题的过滤表达式
+}
+
+// 地址方案枚举，定义地址的类型，如IPv4、IPv6或域名
+enum AddressScheme {
+  ADDRESS_SCHEME_UNSPECIFIED = 0;  // 未指定
+  IPv4 = 1;  // IPv4地址
+  IPv6 = 2;  // IPv6地址
+  DOMAIN_NAME = 3;  // 域名
+}
+
+// 地址消息结构，定义网络地址的基本组成部分
+message Address {
+  string host = 1;  // 主机名或IP地址
+  int32 port = 2;  // 端口号
+}
+
+// 端点消息结构，定义连接到一个或多个网络地址的方案
+message Endpoints {
+  AddressScheme scheme = 1;  // 使用的地址方案
+  repeated Address addresses = 2;  // 地址列表
+}
+
+// 代理消息结构，描述消息代理的相关信息
+message Broker {
+  string name = 1;  // 代理的名称
+  int32 id = 2;  // 代理的索引号，0表示领导者，大于0表示跟随者
+  Endpoints endpoints = 3;  // 代理的网络端点
+}
+
+// 消息队列消息结构，定义一个消息队列的属性
+message MessageQueue {
+  Resource topic = 1;  // 消息队列关联的主题
+  int32 id = 2;  // 消息队列的ID
+  Permission permission = 3;  // 消息队列的权限
+  Broker broker = 4;  // 关联的代理
+  repeated MessageType accept_message_types = 5;  // 该队列接受的消息类型
+}
+
+// 消息类型枚举，定义不同种类的消息
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;  // 未指定
+  NORMAL = 1;  // 普通消息
+  FIFO = 2;  // 先进先出消息
+  DELAY = 3;  // 延时消息
+  TRANSACTION = 4;  // 事务消息
+}
+
+// 摘要类型枚举，定义数据完整性验证时使用的摘要算法
+enum DigestType {
+  DIGEST_TYPE_UNSPECIFIED = 0;  // 未指定
+  CRC32 = 1;  // 使用CRC32算法
+  MD5 = 2;  // 使用MD5算法
+  SHA1 = 3;  // 使用SHA1算法
+}
+
+// 摘要消息结构，用于消息内容的完整性验证
+message Digest {
+  DigestType type = 1;  // 使用的摘要类型
+  string checksum = 2;  // 计算得到的摘要值
+}
+
+// 客户端类型枚举，定义系统中不同类型的客户端
+enum ClientType {
+  CLIENT_TYPE_UNSPECIFIED = 0;  // 未指定
+  PRODUCER = 1;  // 消息生产者
+  PUSH_CONSUMER = 2;  // 推模式消费者
+  SIMPLE_CONSUMER = 3;  // 简单消费者
+  PULL_CONSUMER = 4;  // 拉模式消费者
+}
+
+// 编码枚举，定义消息体可能使用的编码格式
+enum Encoding {
+  ENCODING_UNSPECIFIED = 0;  // 未指定
+  IDENTITY = 1;  // 不进行编码
+  GZIP = 2;  // 使用GZIP压缩
+}
+
+// 系统属性消息结构，定义与消息系统相关的各种属性
+message SystemProperties {
+  optional string tag = 1;  // 消息标签，可选
+  repeated string keys = 2;  // 消息关键字列表
+  string message_id = 3;  // 消息唯一标识符，由客户端生成
+  Digest body_digest = 4;  // 消息体的摘要
+  Encoding body_encoding = 5;  // 消息体的编码方式
+  MessageType message_type = 6;  // 消息类型
+  google.protobuf.Timestamp born_timestamp = 7;  // 消息创建时间戳
+  string born_host = 8;  // 生成消息的主机地址
+  optional google.protobuf.Timestamp store_timestamp = 9;  // 消息存储时间戳，发布时不包含
+  string store_host = 10;  // 存储消息的代理服务器地址
+  optional google.protobuf.Timestamp delivery_timestamp = 11;  // 消息交付时间戳，可选
+  optional string receipt_handle = 12;  // 消息收据句柄，用于确认或否认消息
+  int32 queue_id = 13;  // 消息存储的队列标识符
+  optional int64 queue_offset = 14;  // 消息在队列中的偏移量，发布时不包含
+  optional google.protobuf.Duration invisible_duration = 15;  // 消息被获取后的不可见持续时间
+  optional int32 delivery_attempt = 16;  // 消息的投递尝试次数，首次投递时为1
+  optional string message_group = 17;  // 消息所属的分组名称，可选
+  optional string trace_context = 18;  // 消息的跟踪上下文信息，可选
+  optional google.protobuf.Duration orphaned_transaction_recovery_duration = 19;  // 孤立事务的恢复时间，可选
+  optional DeadLetterQueue dead_letter_queue = 20;  // 死信队列信息，可选
+}
+
+// 死信队列（DLQ）消息结构，定义死信队列中的消息原始信息
+message DeadLetterQueue {
+  string topic = 1;  // 原始主题
+  string message_id = 2;  // 原始消息ID
+}
+
+// 消息结构，定义一个完整的消息实体
+message Message {
+  Resource topic = 1;  // 消息所属的主题
+  map<string, string> user_properties = 2;  // 用户定义的属性，键值对
+  SystemProperties system_properties = 3;  // 系统属性
+  bytes body = 4;  // 消息内容
+}
+
+// 分配结构，定义分配给客户端的消息队列
+message Assignment {
+  MessageQueue message_queue = 1;  // 分配的消息队列
+}
+
+// 状态码枚举，定义可能的操作结果状态码
+enum Code {
+  CODE_UNSPECIFIED = 0;  // 未指定
+  OK = 20000;  // 成功
+  MULTIPLE_RESULTS = 30000;  // 返回多个结果
+  BAD_REQUEST = 40000;  // 错误请求
+  ILLEGAL_ACCESS_POINT = 40001;  // 访问点格式非法
+  ILLEGAL_TOPIC = 40002;  // 主题格式非法
+  ILLEGAL_CONSUMER_GROUP = 40003;  // 消费者组格式非法
+  ILLEGAL_MESSAGE_TAG = 40004;  // 消息标签格式非法
+  ILLEGAL_MESSAGE_KEY = 40005;  // 消息键格式非法
+  ILLEGAL_MESSAGE_GROUP = 40006;  // 消息组格式非法
+  ILLEGAL_MESSAGE_PROPERTY_KEY = 40007;  // 消息属性键格式非法
+  INVALID_TRANSACTION_ID = 40008;  // 事务ID无效
+  ILLEGAL_MESSAGE_ID = 40009;  // 消息ID格式非法
+  ILLEGAL_FILTER_EXPRESSION = 40010;  // 过滤表达式格式非法
+  ILLEGAL_INVISIBLE_TIME = 40011;  // 不可见时间非法
+  ILLEGAL_DELIVERY_TIME = 40012;  // 交付时间非法
+  INVALID_RECEIPT_HANDLE = 40013;  // 收据句柄无效
+  MESSAGE_PROPERTY_CONFLICT_WITH_TYPE = 40014;  // 消息属性与类型冲突
+  UNRECOGNIZED_CLIENT_TYPE = 40015;  // 客户端类型无法识别
+  MESSAGE_CORRUPTED = 40016;  // 消息损坏
+  CLIENT_ID_REQUIRED = 40017;  // 需要客户端ID
+  ILLEGAL_POLLING_TIME = 40018;  // 轮询时间非法
+  UNAUTHORIZED = 40100;  // 未授权
+  PAYMENT_REQUIRED = 40200;  // 需要付费
+  FORBIDDEN = 40300;  // 禁止操作
+  NOT_FOUND = 40400;  // 资源未找到
+  MESSAGE_NOT_FOUND = 40401;  // 消息未找到
+  TOPIC_NOT_FOUND = 40402;  // 主题未找到
+  CONSUMER_GROUP_NOT_FOUND = 40403;  // 消费者组未找到
+  REQUEST_TIMEOUT = 40800;  // 请求超时
+  PAYLOAD_TOO_LARGE = 41300;  // 请求负载过大
+  MESSAGE_BODY_TOO_LARGE = 41301;  // 消息体过大
+  PRECONDITION_FAILED = 42800;  // 前置条件失败
+  TOO_MANY_REQUESTS = 42900;  // 请求过于频繁
+  REQUEST_HEADER_FIELDS_TOO_LARGE = 43100;  // 请求头部字段过大
+  MESSAGE_PROPERTIES_TOO_LARGE = 43101;  // 消息属性过大
+  INTERNAL_ERROR = 50000;  // 内部错误
+  INTERNAL_SERVER_ERROR = 50001;  // 服务器内部错误
+  HA_NOT_AVAILABLE = 50002;  // 高可用性不可用
+  NOT_IMPLEMENTED = 50100;  // 功能未实现
+  PROXY_TIMEOUT = 50400;  // 代理超时
+  MASTER_PERSISTENCE_TIMEOUT = 50401;  // 主服务器持久化超时
+  SLAVE_PERSISTENCE_TIMEOUT = 50402;  // 从服务器持久化超时
+  UNSUPPORTED = 50500;  // 不支持的操作
+  VERSION_UNSUPPORTED = 50501;  // 版本不支持
+  VERIFY_FIFO_MESSAGE_UNSUPPORTED = 50502;  // 验证FIFO消息不支持
+  FAILED_TO_CONSUME_MESSAGE = 60000;  // 消息消费失败
+}
+
+// 状态消息结构，包含操作结果的状态码和描述信息
+message Status {
+  Code code = 1;  // 状态码
+  string message = 2;  // 描述信息
+}
+
+// 语言枚举，定义支持的编程语言
+enum Language {
+  LANGUAGE_UNSPECIFIED = 0;  // 未指定
+  JAVA = 1;  // Java语言
+  CPP = 2;  // C++语言
+  DOT_NET = 3;  // .NET平台
+  GOLANG = 4;  // Go语言
+  RUST = 5;  // Rust语言
+  PYTHON = 6;  // Python语言
+  PHP = 7;  // PHP语言
+  NODE_JS = 8;  // Node.js
+  RUBY = 9;  // Ruby语言
+  OBJECTIVE_C = 10;  // Objective-C
+  DART = 11;  // Dart语言
+  KOTLIN = 12;  // Kotlin语言
+}
+
+// 用户代理（UA）消息结构，定义客户端的语言、版本和平台信息
+message UA {
+  Language language = 1;  // 客户端使用的编程语言
+  string version = 2;  // 客户端版本
+  string platform = 3;  // 客户端平台详情
+  string hostname = 4;  // 客户端主机名
+}
+
+// 设置消息结构，定义客户端的配置
+message Settings {
+  optional ClientType client_type = 1;  // 客户端类型
+  optional Endpoints access_point = 2;  // 访问点配置
+  optional RetryPolicy backoff_policy = 3;  // 重试策略
+  optional google.protobuf.Duration request_timeout = 4;  // 请求超时设置
+  oneof pub_sub {
+    Publishing publishing = 5;  // 发布设置
+    Subscription subscription = 6;  // 订阅设置
+  }
+  UA user_agent = 7;  // 用户代理信息
+  Metric metric = 8;  // 指标信息
+}
+
+// 发布设置消息结构，定义消息发布相关的配置
+message Publishing {
+  repeated Resource topics = 1;  // 发布消息的主题列表
+  int32 max_body_size = 2;  // 消息体最大尺寸
+  bool validate_message_type = 3;  // 是否验证消息类型
+}
+
+// 订阅设置消息结构，定义消息订阅相关的配置
+message Subscription {
+  optional Resource group = 1;  // 消费者组配置
+  repeated SubscriptionEntry subscriptions = 2;  // 订阅条目列表
+  optional bool fifo = 3;  // 是否顺序处理消息
+  optional int32 receive_batch_size = 4;  // 接收消息的批量大小
+  optional google.protobuf.Duration long_polling_timeout = 5;  // 长轮询超时设置
+}
+
+// 指标消息结构，定义客户端指标相关的配置
+message Metric {
+  bool on = 1;  // 是否开启指标上报
+  optional Endpoints endpoints = 2;  // 指标数据上报的终端地址
+}
+
+// 查询偏移策略枚举，定义查询消息队列偏移量的策略
+enum QueryOffsetPolicy {
+  BEGINNING = 0;  // 从队列开始位置查询
+  END = 1;  // 从队列结束位置查询
+  TIMESTAMP = 2;  // 基于特定时间点查询
+}

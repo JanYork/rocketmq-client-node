@@ -1,0 +1,359 @@
+syntax = "proto3";
+
+// 导入Google的时间戳和持续时间的定义文件
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// 导入同一项目内的其他proto定义文件
+import "apache/rocketmq/v2/definition.proto";
+
+package apache.rocketmq.v2;
+
+// 定义C#和Java的命名空间以及文件处理方式
+option csharp_namespace = "Apache.Rocketmq.V2";
+option java_multiple_files = true;
+option java_package = "apache.rocketmq.v2";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+option java_outer_classname = "MQService";
+
+// 查询路由请求消息
+// 用户请求与指定主题相关的路由信息，这些信息帮助客户端了解如何与消息队列通信
+message QueryRouteRequest {
+  Resource topic = 1;         // 需要查询的主题
+  Endpoints endpoints = 2;    // 客户端的网络访问点信息
+}
+
+// 查询路由响应消息
+// 包含查询结果，主要是消息队列的相关信息
+message QueryRouteResponse {
+  Status status = 1;                  // 操作的状态
+  repeated MessageQueue message_queues = 2;  // 返回的消息队列列表
+}
+
+// 发送消息请求消息
+// 用于客户端发送消息到服务器的请求
+message SendMessageRequest {
+  repeated Message messages = 1;      // 要发送的消息列表
+}
+
+// 发送结果条目
+// 详细描述每条消息的发送结果
+message SendResultEntry {
+  Status status = 1;                  // 该消息的发送状态
+  string message_id = 2;              // 消息的唯一标识符
+  string transaction_id = 3;          // 相关事务的ID（如果适用）
+  int64 offset = 4;                   // 消息在消息队列中的偏移量
+}
+
+// 发送消息响应消息
+// 包含一次发送操作的全部结果
+message SendMessageResponse {
+  Status status = 1;                  // 整体发送操作的状态
+  repeated SendResultEntry entries = 2;  // 每条消息的发送结果
+}
+
+// 查询分配请求消息
+// 用于查询针对特定主题和消费者组的分配信息
+message QueryAssignmentRequest {
+  Resource topic = 1;                 // 主题
+  Resource group = 2;                 // 消费者组
+  Endpoints endpoints = 3;            // 客户端的网络访问点信息
+}
+
+// 查询分配响应消息
+// 包含分配信息的查询结果
+message QueryAssignmentResponse {
+  Status status = 1;                  // 查询的状态
+  repeated Assignment assignments = 2;    // 分配给客户端的消息队列
+}
+
+// 接收消息请求消息
+// 客户端请求从服务器接收消息
+message ReceiveMessageRequest {
+  Resource group = 1;                     // 消费者组
+  MessageQueue message_queue = 2;         // 指定的消息队列
+  FilterExpression filter_expression = 3; // 消息过滤表达式
+  int32 batch_size = 4;                   // 请求的批量大小
+  optional google.protobuf.Duration invisible_duration = 5; // 消息的不可见时长
+  bool auto_renew = 6;                    // 是否自动续订消息的不可见状态
+  optional google.protobuf.Duration long_polling_timeout = 7; // 长轮询超时设置
+}
+
+// 接收消息响应消息
+// 服务器返回的接收消息结果
+message ReceiveMessageResponse {
+  oneof content {
+    Status status = 1;                          // 操作的状态
+    Message message = 2;                        // 接收到的消息
+    google.protobuf.Timestamp delivery_timestamp = 3; // 消息的交付时间戳
+  }
+}
+
+// 确认消息条目
+// 用于确认消息处理完成的具体信息
+message AckMessageEntry {
+  string message_id = 1;     // 消息ID
+  string receipt_handle = 2; // 消息的收据句柄
+}
+
+// 确认消息请求消息
+// 客户端发送消息处理完成的确认
+message AckMessageRequest {
+  Resource group = 1;                   // 消费者组
+  Resource topic = 2;                   // 主题
+  repeated AckMessageEntry entries = 3; // 需要确认的消息列表
+}
+
+// 确认消息结果条目
+// 每条消息确认的结果
+message AckMessageResultEntry {
+  string message_id = 1;     // 消息ID
+  string receipt_handle = 2; // 消息的收据句柄
+  Status status = 3;         // 确认结果的状态
+}
+
+// 确认消息响应消息
+// 包含所有消息确认的结果
+message AckMessageResponse {
+  Status status = 1;                         // RPC层面的状态
+  repeated AckMessageResultEntry entries = 2;  // 每条消息的确认结果
+}
+
+// 转发消息到死信队列请求消息
+// 当消息达到最大投递次数仍未处理成功时，请求将消息转移到死信队列
+message ForwardMessageToDeadLetterQueueRequest {
+  Resource group = 1;
+  Resource topic = 2;
+  string receipt_handle = 3;  // 消息的收据句柄
+  string message_id = 4;      // 消息ID
+  int32 delivery_attempt = 5; // 当前的投递尝试次数
+  int32 max_delivery_attempts = 6; // 允许的最大投递尝试次数
+}
+
+// 转发消息到死信队列响应消息
+// 包含转发操作的结果
+message ForwardMessageToDeadLetterQueueResponse {
+  Status status = 1;  // 操作的状态
+}
+
+// 心跳请求消息
+// 客户端定期发送心跳到服务器以保持活动状态，并报告配置信息
+message HeartbeatRequest {
+  optional Resource group = 1;  // 消费者组，对生产者可选
+  ClientType client_type = 2;   // 客户端类型
+}
+
+// 心跳响应消息
+// 服务器对心跳的响应
+message HeartbeatResponse {
+  Status status = 1;  // 操作的状态
+}
+
+// 结束事务请求消息
+// 提交或回滚某个事务消息
+message EndTransactionRequest {
+  Resource topic = 1;                   // 主题
+  string message_id = 2;                // 消息ID
+  string transaction_id = 3;            // 事务ID
+  TransactionResolution resolution = 4; // 事务的解决方式（提交或回滚）
+  TransactionSource source = 5;         // 事务的来源
+  string trace_context = 6;             // 用于追踪的上下文信息
+}
+
+// 结束事务响应消息
+// 包含结束事务操作的结果
+message EndTransactionResponse {
+  Status status = 1;  // 操作的状态
+}
+
+// 打印线程栈跟踪命令
+// 请求打印服务器或客户端的线程栈跟踪信息
+message PrintThreadStackTraceCommand {
+  string nonce = 1;  // 随机数或标记，用于标识请求
+}
+
+// 线程栈跟踪信息
+// 包含线程栈跟踪的详细信息
+message ThreadStackTrace {
+  string nonce = 1;  // 请求的标识
+  optional string thread_stack_trace = 2;  // 线程栈跟踪的具体内容
+}
+
+// 验证消息命令
+// 请求验证某个消息的处理是否符合预期
+message VerifyMessageCommand {
+  string nonce = 1;  // 请求的标识
+  Message message = 2;  // 需要验证的消息
+}
+
+// 验证消息结果
+// 包含验证结果的信息
+message VerifyMessageResult {
+  string nonce = 1;  // 请求的标识
+}
+
+// 恢复孤儿事务命令
+// 请求恢复处理状态未明的事务
+message RecoverOrphanedTransactionCommand {
+  Message message = 1;  // 事务消息
+  string transaction_id = 2;  // 事务ID
+}
+
+// 遥测命令
+// 包含多种用于监控和管理的命令
+message TelemetryCommand {
+  optional Status status = 1;  // 操作的状态
+
+  oneof command {
+    Settings settings = 2;  // 客户端配置
+    ThreadStackTrace thread_stack_trace = 3;  // 线程栈跟踪报告
+    VerifyMessageResult verify_message_result = 4;  // 消息验证结果
+    RecoverOrphanedTransactionCommand recover_orphaned_transaction_command = 5;  // 恢复孤儿事务命令
+    PrintThreadStackTraceCommand print_thread_stack_trace_command = 6;  // 打印线程栈跟踪命令
+    VerifyMessageCommand verify_message_command = 7;  // 验证消息命令
+  }
+}
+
+// 客户端终止通知请求
+// 通知服务器客户端即将终止
+message NotifyClientTerminationRequest {
+  optional Resource group = 1;  // 消费者组，对生产者可选
+}
+
+// 客户端终止通知响应
+// 包含终止通知的处理结果
+message NotifyClientTerminationResponse {
+  Status status = 1;  // 操作的状态
+}
+
+// 更改消息不可见持续时间请求
+// 请求更改消息的不可见状态持续时间
+message ChangeInvisibleDurationRequest {
+  Resource group = 1;                      // 消费者组
+  Resource topic = 2;                      // 主题
+  string receipt_handle = 3;               // 消息的收据句柄
+  google.protobuf.Duration invisible_duration = 4;  // 新的不可见持续时间
+  string message_id = 5;                   // 消息ID
+}
+
+// 更改消息不可见持续时间响应
+// 包含更改操作的结果
+message ChangeInvisibleDurationResponse {
+  Status status = 1;                       // 操作的状态
+  string receipt_handle = 2;               // 可能的新收据句柄
+}
+
+// 拉取消息请求
+// 请求从服务器拉取指定数量的消息
+message PullMessageRequest {
+  Resource group = 1;                      // 消费者组
+  MessageQueue message_queue = 2;          // 指定的消息队列
+  int64 offset = 3;                        // 从此偏移量开始拉取
+  int32 batch_size = 4;                    // 拉取的批量大小
+  FilterExpression filter_expression = 5;  // 消息过滤表达式
+  google.protobuf.Duration long_polling_timeout = 6;  // 长轮询超时设置
+}
+
+// 拉取消息响应
+// 服务器返回的拉取消息结果
+message PullMessageResponse {
+  oneof content {
+    Status status = 1;                      // 操作的状态
+    Message message = 2;                    // 拉取到的消息
+    int64 next_offset = 3;                  // 下一个消息的偏移量
+  }
+}
+
+// 更新偏移量请求
+// 请求更新消费者组在消息队列中的读取偏移量
+message UpdateOffsetRequest {
+  Resource group = 1;                      // 消费者组
+  MessageQueue message_queue = 2;          // 指定的消息队列
+  int64 offset = 3;                        // 要更新到的新偏移量
+}
+
+// 更新偏移量响应
+// 包含更新偏移量操作的结果
+message UpdateOffsetResponse {
+  Status status = 1;                       // 操作的状态
+}
+
+// 获取偏移量请求
+// 请求获取消费者组在消息队列中的当前读取偏移量
+message GetOffsetRequest {
+  Resource group = 1;                      // 消费者组
+  MessageQueue message_queue = 2;          // 指定的消息队列
+}
+
+// 获取偏移量响应
+// 包含获取偏移量操作的结果
+message GetOffsetResponse {
+  Status status = 1;                       // 操作的状态
+  int64 offset = 2;                        // 当前偏移量
+}
+
+// 查询偏移量请求
+// 请求根据特定策略查询消息队列的偏移量
+message QueryOffsetRequest {
+  MessageQueue message_queue = 1;          // 指定的消息队列
+  QueryOffsetPolicy query_offset_policy = 2;  // 查询偏移量的策略
+  optional google.protobuf.Timestamp timestamp = 3;  // 时间戳（用于基于时间的查询）
+}
+
+// 查询偏移量响应
+// 包含查询偏移量操作的结果
+message QueryOffsetResponse {
+  Status status = 1;                       // 操作的状态
+  int64 offset = 2;                        // 查询到的偏移量
+}
+
+// 定义消息服务
+// 包含了多种消息操作的RPC服务，如查询路由、发送消息、接收消息、确认消息等
+service MessagingService {
+  // 查询指定主题的路由信息
+  rpc QueryRoute(QueryRouteRequest) returns (QueryRouteResponse) {}
+
+  // 客户端定期发送心跳信息以保持连接
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
+
+  // 发送消息到消息队列
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {}
+
+  // 查询指定主题和消费者组的消息队列分配情况
+  rpc QueryAssignment(QueryAssignmentRequest) returns (QueryAssignmentResponse) {}
+
+  // 从服务器接收消息
+  rpc ReceiveMessage(ReceiveMessageRequest) returns (stream ReceiveMessageResponse) {}
+
+  // 确认消息处理完成
+  rpc AckMessage(AckMessageRequest) returns (AckMessageResponse) {}
+
+  // 将消息转发到死信队列
+  rpc ForwardMessageToDeadLetterQueue(ForwardMessageToDeadLetterQueueRequest)
+      returns (ForwardMessageToDeadLetterQueueResponse) {}
+
+  // 拉取消息
+  rpc PullMessage(PullMessageRequest) returns (stream PullMessageResponse) {}
+
+  // 更新消费偏移量
+  rpc UpdateOffset(UpdateOffsetRequest) returns (UpdateOffsetResponse) {}
+
+  // 获取消费偏移量
+  rpc GetOffset(GetOffsetRequest) returns (GetOffsetResponse) {}
+
+  // 根据查询策略查询偏移量
+  rpc QueryOffset(QueryOffsetRequest) returns (QueryOffsetResponse) {}
+
+  // 结束事务，提交或回滚
+  rpc EndTransaction(EndTransactionRequest) returns (EndTransactionResponse) {}
+
+  // 客户端与服务器之间的遥测交互
+  rpc Telemetry(stream TelemetryCommand) returns (stream TelemetryCommand) {}
+
+  // 通知服务器客户端即将终止
+  rpc NotifyClientTermination(NotifyClientTerminationRequest) returns (NotifyClientTerminationResponse) {}
+
+  // 更改消息的不可见持续时间
+  rpc ChangeInvisibleDuration(ChangeInvisibleDurationRequest) returns (ChangeInvisibleDurationResponse) {}
+}
