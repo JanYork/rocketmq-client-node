@@ -18,7 +18,7 @@ export class GrpcServiceFactory {
      * 服务列表
      * @private
      */
-    private service: IGrpcService[] = [];
+    private readonly service: IGrpcService[] = [];
 
     /**
      * 服务器是否正在运行
