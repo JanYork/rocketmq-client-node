@@ -47,4 +47,8 @@ export default class GrpcConfig implements IGrpcConfig {
     get port(): number {
         return this.config.port;
     }
+
+    get address(): string {
+        return `${this.host}:${this.port}`;
+    }
 }
