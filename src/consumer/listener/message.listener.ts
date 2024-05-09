@@ -1,5 +1,5 @@
-import { MessageView } from "@/message";
-import { MessageResult } from "@/enum/message.enum";
+import { MessageView } from '@/message';
+import { MessageResult } from '@/enum/message.enum';
 
 /**
  * 消息监听器。
@@ -13,5 +13,20 @@ export interface MessageListener {
    * 消息监听
    * @param message 消息
    */
-  onMessage(message: MessageView): MessageResult;
+  onMessage(message: MessageView): Promise<MessageResult>;
+
+  /**
+   * 消息开始监听
+   */
+  onStart?(): void;
+
+  /**
+   * 消息监听结束
+   */
+  onStop?(): void;
+
+  /**
+   * 消息监听异常
+   */
+  onError?(error: Error): void;
 }

@@ -6,19 +6,26 @@ import {
 import {
   Consumer,
   FilterExpression,
+  PushConsumerOptions,
   PushSubscriptionSetting,
-  SimpleConsumerOptions,
-  SimpleSubscriptionSetting,
   SubscriptionLoadBalancer
 } from '@/consumer';
 import { MessageView } from '@/message';
 import { TopicRoute } from '@/model';
 import { createResource } from '@/util';
 import { MessageListener } from '@/consumer/listener/message.listener';
+import { MessageResult } from '@/enum/message.enum';
 
+/**
+ * push消费者。
+ *
+ * @author JanYork
+ * @email <747945307@qq.com>
+ * @date 2024/5/9 下午8:04
+ */
 export class PushConsumer extends Consumer {
   /**
-   * 简单订阅设置
+   * PUSH订阅设置
    * @private
    */
   readonly #pushSubscriptionSetting: PushSubscriptionSetting;
@@ -51,12 +58,39 @@ export class PushConsumer extends Consumer {
   #topicIndex = 0;
 
   /**
+   * 长轮询间隔等待时间
+   * @private
+   */
+  readonly #longPollingInterval: number;
+
+  /**
+   * 是否已关闭
+   * @private
+   */
+  isShutdown = false;
+
+  /**
+   * 单次receive拉取消息最大数量
+   */
+  readonly maxMessageNum: number;
+
+  /**
+   * 是否顺序消费
+   */
+  readonly isFifo: boolean;
+
+  /**
+   * 异步拉取消息的数量(小于等于maxMessageNum)
+   */
+  #asyncPullBatchSize: number;
+
+  /**
    * 消息监听器
    * @private
    */
   readonly #listener: MessageListener;
 
-  constructor(options: SimpleConsumerOptions) {
+  constructor(options: PushConsumerOptions) {
     options.topics = Array.from(options.subscriptions.keys());
     super(options);
 
@@ -73,15 +107,94 @@ export class PushConsumer extends Consumer {
     }
 
     this.#awaitDuration = options.awaitDuration ?? 30000;
+    this.#listener = options.listener;
+    this.maxMessageNum = options.maxMessageNum ?? 10;
+    this.isFifo = options.isFifo ?? false;
+    this.#asyncPullBatchSize = this.maxMessageNum;
+    this.#longPollingInterval = options.longPollingInterval ?? 1000;
 
-    this.#pushSubscriptionSetting = new SimpleSubscriptionSetting(
+    this.#pushSubscriptionSetting = new PushSubscriptionSetting(
       this.id,
       this.endpoints,
       this.consumerGroup,
       this.requestTimeout,
       this.#awaitDuration,
-      this.#subscriptionExpressionMap
+      this.#subscriptionExpressionMap,
+      this.maxMessageNum,
+      this.isFifo
     );
+  }
+
+  /**
+   * 开始注册监听
+   */
+  async startup() {
+    // 启动消费者
+    await super.startup();
+    // 开始持续长轮询拉取消息
+    await this.consumeMessages();
+    this.#listener?.onStart();
+  }
+
+  /**
+   * 关闭监听消费
+   */
+  async shutdown() {
+    this.isShutdown = true;
+    await super.shutdown();
+    this.#listener?.onStop();
+  }
+
+  /**
+   * 消费消息。
+   */
+  async consumeMessages() {
+    try {
+      const batchSize = this.isFifo
+        ? this.maxMessageNum
+        : this.#asyncPullBatchSize;
+
+      if (batchSize >= 0) {
+        const messages = await this.#receive(batchSize);
+
+        if (messages.length > 0) {
+          if (!this.isFifo) {
+            // 更新 #asyncPullBatchSize，以保持正在处理的消息数小于 maxMessageNum
+            this.#asyncPullBatchSize -= messages.length;
+          }
+
+          for (const message of messages) {
+            // 如果是顺序消费，则同步执行ack
+            if (this.isFifo) {
+              const result = await this.#listener.onMessage(message);
+              if (result == MessageResult.SUCCESS) {
+                await this.#ack(message);
+              }
+            } else {
+              this.#listener.onMessage(message).then(async result => {
+                if (result == MessageResult.SUCCESS) {
+                  await this.#ack(message);
+                  this.#asyncPullBatchSize++; // 异步 ack 成功后，增加一个空闲位置
+                }
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // TODO: 日志模块
+      console.error('An error occurred:', error);
+      this.#listener?.onError(error);
+    } finally {
+      // 为了缓解服务器压力，等待一段时间后再次拉取消息
+      await new Promise(resolve =>
+        setTimeout(resolve, this.#longPollingInterval)
+      );
+
+      if (!this.isShutdown) {
+        await this.consumeMessages();
+      }
+    }
   }
 
   /**

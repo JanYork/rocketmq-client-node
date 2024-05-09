@@ -31,18 +31,32 @@ export class PushSubscriptionSetting extends Setting {
    */
   readonly subscriptionExpressions: Map<string, FilterExpression>;
 
+  /**
+   * 单次订阅获取最大消息数量
+   */
+  maxMessageNum: number;
+
+  /**
+   * 是否为 FIFO 模式
+   */
+  isFifo: boolean;
+
   constructor(
     clientId: string,
     accessPoint: Endpoints,
     group: string,
     requestTimeout: number,
     longPollingTimeout: number,
-    subscriptionExpressions: Map<string, FilterExpression>
+    subscriptionExpressions: Map<string, FilterExpression>,
+    maxMessageNum: number,
+    isFifo: boolean
   ) {
     super(clientId, ClientType.SIMPLE_CONSUMER, accessPoint, requestTimeout);
     this.longPollingTimeout = longPollingTimeout;
     this.group = group;
     this.subscriptionExpressions = subscriptionExpressions;
+    this.maxMessageNum = maxMessageNum;
+    this.isFifo = isFifo;
   }
 
   /**
