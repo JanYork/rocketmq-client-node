@@ -1,16 +1,15 @@
-import {Server} from "@grpc/grpc-js";
+import { Server } from "@grpc/grpc-js";
 
 /**
- * Interface for gRPC service，预留上层扩展接口
+ * gRPC 服务接口
  *
  * @export
  */
-interface IGrpcService {
-    /**
-     * Register service
-     * @param server
-     */
-    register(server: Server): void;
+export interface IGrpcService {
+  /**
+   * 注册 gRPC 服务
+   *
+   * @param server
+   */
+  register(server: Server): void;
 }
-
-export { IGrpcService };

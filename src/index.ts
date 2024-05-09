@@ -1,4 +1,4 @@
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
 import Logger from "@/logger";
 import ConsoleLogger from "@/logger/console.logger";
 import LogLevel from "@/enum/logger.enum";
@@ -22,67 +22,78 @@ import GrpcConfig from "@/config/env.config";
  * app.start();
  */
 class Application {
-    private readonly logger: Logger;
-    private readonly server: Server;
-    private readonly factory: GrpcServiceFactory;
-    private readonly config: GrpcConfig;
+  private readonly logger: Logger;
+  private readonly server: Server;
+  private readonly factory: GrpcServiceFactory;
+  private readonly config: GrpcConfig;
 
-    constructor() {
-        dotenv.config();
-        this.logger = Logger.create(new ConsoleLogger(), LogLevel.DEBUG);
-        this.config = new GrpcConfig();
-        this.server = new Server();
-        this.factory = new GrpcServiceFactory(this.server);
+  constructor() {
+    dotenv.config();
+    this.logger = Logger.create(new ConsoleLogger(), LogLevel.DEBUG);
+    this.config = new GrpcConfig();
+    this.server = new Server();
+    this.factory = new GrpcServiceFactory(this.server);
+  }
+
+  /**
+   * 启动应用程序，注册服务并监听端口。
+   *
+   * @returns {Promise<void>}
+   */
+  async start(): Promise<void> {
+    this.onBeforeStart?.();
+
+    const adminRPC = new AdminRPC();
+
+    this.factory.put(adminRPC);
+
+    try {
+      this.factory.startServer(
+        this.config.address,
+        ServerCredentials.createInsecure(),
+      );
+      this.logger.info({ message: `服务器正在运行于 ${this.config.address}` });
+
+      process.on("SIGINT", this.shutdown.bind(this));
+
+      this.onAfterStart?.();
+    } catch (error) {
+      this.logger.error({ message: "服务器启动失败", error });
     }
+  }
 
-    /**
-     * 启动应用程序，注册服务并监听端口。
-     *
-     * @returns {Promise<void>}
-     */
-    async start(): Promise<void> {
-        this.onBeforeStart?.();
+  /**
+   * 在应用程序即将关闭时执行的操作。
+   */
+  private shutdown(): void {
+    this.onBeforeShutdown?.();
+    this.factory.stopServer();
+    this.onAfterShutdown?.();
+  }
 
-        const adminRPC = new AdminRPC();
+  setBeforeStartCallback(callback: () => void): void {
+    this.onBeforeStart = callback;
+  }
 
-        this.factory.put(adminRPC);
+  setAfterStartCallback(callback: () => void): void {
+    this.onAfterStart = callback;
+  }
 
-        try {
-            this.factory.startServer(this.config.address, ServerCredentials.createInsecure());
-            this.logger.info({message: `服务器正在运行于 ${this.config.address}`});
+  setBeforeShutdownCallback(callback: () => void): void {
+    this.onBeforeShutdown = callback;
+  }
 
-            process.on('SIGINT', this.shutdown.bind(this));
+  setAfterShutdownCallback(callback: () => void): void {
+    this.onAfterShutdown = callback;
+  }
 
-            this.onAfterStart?.();
-        } catch (error) {
-            this.logger.error({message: '服务器启动失败', error});
-        }
-    }
+  private onBeforeStart?: () => void;
 
-    /**
-     * 在应用程序即将关闭时执行的操作。
-     */
-    private shutdown(): void {
-        this.onBeforeShutdown?.();
-        this.factory.stopServer();
-        this.onAfterShutdown?.();
-    }
+  private onAfterStart?: () => void;
 
-    setBeforeStartCallback(callback: () => void): void { this.onBeforeStart = callback; }
+  private onBeforeShutdown?: () => void;
 
-    setAfterStartCallback(callback: () => void): void { this.onAfterStart = callback; }
-
-    setBeforeShutdownCallback(callback: () => void): void { this.onBeforeShutdown = callback; }
-
-    setAfterShutdownCallback(callback: () => void): void { this.onAfterShutdown = callback; }
-
-    private onBeforeStart?: () => void;
-
-    private onAfterStart?: () => void;
-
-    private onBeforeShutdown?: () => void;
-
-    private onAfterShutdown?: () => void;
+  private onAfterShutdown?: () => void;
 }
 
 export default Application;

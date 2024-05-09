@@ -1,7 +1,7 @@
-import LogLevel from '@/enum/logger.enum';
+import LogLevel from "@/enum/logger.enum";
 
 /**
- * log entry interface
+ * 日志条目
  *
  * @interface LogEntry
  * @property {string} message - log message
@@ -9,54 +9,61 @@ import LogLevel from '@/enum/logger.enum';
  * @property {Error} [error] - log error
  */
 interface LogEntry {
-    message: string;
-    context?: Record<string, unknown>;
-    error?: Error;
+  /**
+   * 日志消息
+   */
+  message: string;
+
+  /**
+   * 日志上下文
+   */
+  context?: Record<string, unknown>;
+
+  /**
+   * 日志错误
+   */
+  error?: Error;
 }
 
 /**
- * logger interface
+ * 日志记录器接口
  *
  * @interface ILogger
- * @method debug - log debug message
- * @method info - log info message
- * @method warn - log warn message
- * @method error - log error message
  */
 interface ILogger {
-    /**
-     * log debug message
-     * @param entry - log entry
-     */
-    debug(entry: LogEntry): void;
+  /**
+   * log debug message
+   * @param entry - log entry
+   */
+  debug(entry: LogEntry): void;
 
-    /**
-     * log info message
-     * @param entry
-     */
-    info(entry: LogEntry): void;
+  /**
+   * log info message
+   * @param entry
+   */
+  info(entry: LogEntry): void;
 
-    /**
-     * log warn message
-     * @param entry
-     */
-    warn(entry: LogEntry): void;
+  /**
+   * log warn message
+   * @param entry
+   */
+  warn(entry: LogEntry): void;
 
-    /**
-     * log error message
-     * @param entry
-     */
-    error(entry: LogEntry): void;
+  /**
+   * log error message
+   * @param entry
+   */
+  error(entry: LogEntry): void;
 }
 
 /**
- * logger config interface
+ * 日志配置
  *
  * @interface LoggerConfig
  * @property {LogLevel} level - log level
  */
 interface LoggerConfig {
-    level: LogLevel;
+  level: LogLevel;
 }
 
 export { LogEntry, ILogger, LoggerConfig };
