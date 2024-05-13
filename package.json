@@ -17,6 +17,7 @@
     "@grpc/proto-loader": "^0.7.12",
     "@node-rs/crc32": "^1.10.3",
     "address": "^2.0.2",
+    "async-mutex": "^0.5.0",
     "dotenv": "^16.4.5",
     "google-protobuf": "^3.21.2",
     "module-alias": "^2.2.3",
