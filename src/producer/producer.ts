@@ -1,36 +1,36 @@
-import assert from "node:assert";
-import { setTimeout } from "node:timers/promises";
+import assert from 'node:assert';
+import { setTimeout } from 'node:timers/promises';
 import {
   ClientType,
   MessageType,
-  TransactionResolution,
-} from "@/rpc/apache/rocketmq/v2/definition_pb";
+  TransactionResolution
+} from '@/rpc/apache/rocketmq/v2/definition_pb';
 import {
   EndTransactionRequest,
   HeartbeatRequest,
   NotifyClientTerminationRequest,
   RecoverOrphanedTransactionCommand,
-  SendMessageRequest,
-} from "@/rpc/apache/rocketmq/v2/service_pb";
+  SendMessageRequest
+} from '@/rpc/apache/rocketmq/v2/service_pb';
 import {
-  PublishMessage,
+  Message,
   MessageOptions,
   MessageView,
-  Message,
-} from "@/message";
+  PublishMessage
+} from '@/message';
 import {
-  Transaction,
-  SendReceipt,
+  ITransactionChecker,
   ProducerOptions,
   PublishingLoadBalancer,
   PublishingSetting,
-  ITransactionChecker,
-} from "@/producer";
-import { createResource } from "@/util";
-import { Endpoints, MessageQueue, TopicRoute } from "@/model";
-import { ExponentialBackoffRetryPolicy } from "@/retry";
-import { StatusChecker, TooManyRequestsException } from "@/exception";
-import { RpcBaseClient, Setting } from "@/server/client";
+  SendReceipt,
+  Transaction
+} from '@/producer';
+import { createResource } from '@/util';
+import { Endpoints, MessageQueue, TopicRoute } from '@/model';
+import { ExponentialBackoffRetryPolicy } from '@/retry';
+import { StatusChecker, TooManyRequestsException } from '@/exception';
+import { RpcBaseClient, Setting } from '@/server/client';
 
 /**
  * RocketMQ 生产者
@@ -69,7 +69,7 @@ export class Producer extends RpcBaseClient {
     // 详细可查阅：https://rocketmq.apache.org/docs/introduction/03limits/
     // 默认消息发送重试次数上限为 3 次
     const retryPolicy = ExponentialBackoffRetryPolicy.immediatelyRetryPolicy(
-      options.maxAttempts ?? 3,
+      options.maxAttempts ?? 3
     );
 
     this.#publishingSetting = new PublishingSetting(
@@ -77,8 +77,17 @@ export class Producer extends RpcBaseClient {
       this.endpoints,
       retryPolicy,
       this.requestTimeout,
-      this.topics,
+      this.topics
     );
+
+    this.logger?.debug({
+      message: 'Producer created',
+      context: {
+        clientId: this.id,
+        topics: this.topics,
+        setting: this.#publishingSetting
+      }
+    });
 
     this.#checker = options.checker;
   }
@@ -94,7 +103,15 @@ export class Producer extends RpcBaseClient {
    * 开始一个事务。
    */
   beginTransaction() {
-    assert(this.#checker, "Transaction checker should not be null");
+    assert(this.#checker, 'Transaction checker should not be null');
+
+    this.logger?.debug({
+      message: 'Begin a transaction',
+      context: {
+        clientId: this.id
+      }
+    });
+
     return new Transaction(this);
   }
 
@@ -112,7 +129,7 @@ export class Producer extends RpcBaseClient {
     message: Message,
     messageId: string,
     transactionId: string,
-    resolution: TransactionResolution,
+    resolution: TransactionResolution
   ) {
     const request = new EndTransactionRequest()
       .setMessageId(messageId)
@@ -123,8 +140,19 @@ export class Producer extends RpcBaseClient {
     const response = await this.manager.endTransaction(
       endpoints,
       request,
-      this.requestTimeout,
+      this.requestTimeout
     );
+
+    this.logger?.debug({
+      message: 'End a transaction',
+      context: {
+        clientId: this.id,
+        endpoints,
+        messageId,
+        transactionId,
+        resolution
+      }
+    });
 
     StatusChecker.check(response.getStatus()?.toObject());
   }
@@ -137,7 +165,7 @@ export class Producer extends RpcBaseClient {
    */
   async onRecoverOrphanedTransactionCommand(
     endpoints: Endpoints,
-    command: RecoverOrphanedTransactionCommand,
+    command: RecoverOrphanedTransactionCommand
   ) {
     const transactionId = command.getTransactionId();
     const messagePB = command.getMessage()!;
@@ -145,13 +173,13 @@ export class Producer extends RpcBaseClient {
 
     if (!this.#checker) {
       this.logger.error({
-        message: "No transaction checker registered, ignore it",
+        message: 'No transaction checker registered, ignore it',
         context: {
           messageId,
           transactionId,
           endpoints,
-          clientId: this.id,
-        },
+          clientId: this.id
+        }
       });
       return;
     }
@@ -163,14 +191,14 @@ export class Producer extends RpcBaseClient {
     } catch (err) {
       this.logger.error({
         message:
-          "Failed to decode message during orphaned transaction message recovery",
+          'Failed to decode message during orphaned transaction message recovery',
         context: {
           messageId,
           transactionId,
           endpoints,
           clientId: this.id,
-          error: err,
-        },
+          error: err
+        }
       });
       return;
     }
@@ -189,28 +217,28 @@ export class Producer extends RpcBaseClient {
         messageView,
         messageId,
         transactionId,
-        resolution,
+        resolution
       );
 
       this.logger.info({
-        message: "Recover orphaned transaction message success",
+        message: 'Recover orphaned transaction message success',
         context: {
           transactionId,
           resolution,
           messageId,
-          clientId: this.id,
-        },
+          clientId: this.id
+        }
       });
     } catch (err) {
       this.logger.error({
-        message: "Exception raised while checking the transaction",
+        message: 'Exception raised while checking the transaction',
         context: {
           messageId,
           transactionId,
           endpoints,
           clientId: this.id,
-          error: err,
-        },
+          error: err
+        }
       });
 
       return;
@@ -232,6 +260,13 @@ export class Producer extends RpcBaseClient {
    * @protected
    */
   protected wrapHeartbeatRequest(): HeartbeatRequest {
+    this.logger?.debug({
+      message: 'Wrap heartbeat request',
+      context: {
+        clientId: this.id
+      }
+    });
+
     return new HeartbeatRequest().setClientType(ClientType.PRODUCER);
   }
 
@@ -251,6 +286,15 @@ export class Producer extends RpcBaseClient {
    * @param transaction 事务
    */
   async send(message: MessageOptions, transaction?: Transaction) {
+    this.logger?.debug({
+      message: 'Send message',
+      context: {
+        clientId: this.id,
+        message,
+        transaction
+      }
+    });
+
     if (!transaction) {
       const sendReceipts = await this.#send([message], false);
       return sendReceipts[0];
@@ -261,6 +305,16 @@ export class Producer extends RpcBaseClient {
     const sendReceipt = sendReceipts[0];
 
     transaction.tryAddReceipt(publishingMessage, sendReceipt);
+
+    this.logger?.debug({
+      message: 'Send message successfully',
+      context: {
+        clientId: this.id,
+        message,
+        transaction
+      }
+    });
+
     return sendReceipt;
   }
 
@@ -277,34 +331,34 @@ export class Producer extends RpcBaseClient {
 
     for (const message of messages) {
       pubMessages.push(
-        new PublishMessage(message, this.#publishingSetting, txEnabled),
+        new PublishMessage(message, this.#publishingSetting, txEnabled)
       );
       topics.add(message.topic);
     }
 
     if (topics.size > 1) {
       throw new TypeError(
-        `Messages to send have different topics=${JSON.stringify(topics)}`,
+        `Messages to send have different topics=${JSON.stringify(topics)}`
       );
     }
 
     const topic = pubMessages[0].topic;
     const messageType = pubMessages[0].messageType;
     const messageGroup = pubMessages[0].messageGroup;
-    const messageTypes = new Set(pubMessages.map((m) => m.messageType));
+    const messageTypes = new Set(pubMessages.map(m => m.messageType));
 
     if (messageTypes.size > 1) {
       throw new TypeError(
-        `Messages to send have different types=${JSON.stringify(messageTypes)}`,
+        `Messages to send have different types=${JSON.stringify(messageTypes)}`
       );
     }
 
     // 如果消息类型为 FIFO，则消息组必须相同，否则无需继续。
     if (messageType === MessageType.FIFO) {
-      const messageGroups = new Set(pubMessages.map((m) => m.messageGroup!));
+      const messageGroups = new Set(pubMessages.map(m => m.messageGroup!));
       if (messageGroups.size > 1) {
         throw new TypeError(
-          `FIFO messages to send have message groups, messageGroups=${JSON.stringify(messageGroups)}`,
+          `FIFO messages to send have message groups, messageGroups=${JSON.stringify(messageGroups)}`
         );
       }
     }
@@ -362,7 +416,7 @@ export class Producer extends RpcBaseClient {
     messageType: MessageType,
     candidates: MessageQueue[],
     messages: PublishMessage[],
-    attempt: number,
+    attempt: number
   ): Promise<SendReceipt[]> {
     // 计算当前消息队列
     const index = (attempt - 1) % candidates.length;
@@ -374,14 +428,14 @@ export class Producer extends RpcBaseClient {
       !acceptMessageTypes.includes(messageType)
     ) {
       throw new TypeError(
-        "Current message type not match with " +
-          "topic accept message types, topic=" +
+        'Current message type not match with ' +
+          'topic accept message types, topic=' +
           topic +
-          ", actualMessageType=" +
+          ', actualMessageType=' +
           messageType +
-          ", " +
-          "acceptMessageTypes=" +
-          JSON.stringify(acceptMessageTypes),
+          ', ' +
+          'acceptMessageTypes=' +
+          JSON.stringify(acceptMessageTypes)
       );
     }
 
@@ -394,27 +448,27 @@ export class Producer extends RpcBaseClient {
       const response = await this.manager.sendMessage(
         endpoints,
         request,
-        this.requestTimeout,
+        this.requestTimeout
       );
       sendReceipts = SendReceipt.processResponseInvocation(mq, response);
     } catch (err) {
-      const messageIds = messages.map((m) => m.messageId);
+      const messageIds = messages.map(m => m.messageId);
       // 由于发送失败而隔离端点。
       this.#isolate(endpoints);
 
       if (attempt >= maxAttempts) {
         // 不需要更多的尝试了
         this.logger.error({
-          message: "Failed to send message finally",
+          message: 'Failed to send message finally',
           context: {
             maxAttempts,
             attempt,
             topic,
             messageIds,
             endpoints,
-            clientId: this.id,
+            clientId: this.id
           },
-          error: err,
+          error: err
         });
 
         throw err;
@@ -423,16 +477,16 @@ export class Producer extends RpcBaseClient {
       // 无需再尝试事务性消息
       if (messageType === MessageType.TRANSACTION) {
         this.logger.error({
-          message: "Failed to send transactional message finally",
+          message: 'Failed to send transactional message finally',
           context: {
             maxAttempts,
             attempt,
             topic,
             messageIds,
             endpoints,
-            clientId: this.id,
+            clientId: this.id
           },
-          error: err,
+          error: err
         });
         throw err;
       }
@@ -442,16 +496,16 @@ export class Producer extends RpcBaseClient {
       // 如果请求未受到限制，请立即重试
       if (!(err instanceof TooManyRequestsException)) {
         this.logger.error({
-          message: "Failed to send message, would attempt to resend right now",
+          message: 'Failed to send message, would attempt to resend right now',
           context: {
             maxAttempts,
             attempt,
             topic,
             messageIds,
             endpoints,
-            clientId: this.id,
+            clientId: this.id
           },
-          error: err,
+          error: err
         });
 
         return this.#send0(
@@ -459,13 +513,13 @@ export class Producer extends RpcBaseClient {
           messageType,
           candidates,
           messages,
-          nextAttempt,
+          nextAttempt
         );
       }
 
       const delay = this.#getRetryPolicy().getNextAttemptDelay(nextAttempt);
       this.logger.warn({
-        message: "Failed to send message due to too many requests",
+        message: 'Failed to send message due to too many requests',
         context: {
           delay,
           maxAttempts,
@@ -473,9 +527,9 @@ export class Producer extends RpcBaseClient {
           topic,
           messageIds,
           endpoints,
-          clientId: this.id,
+          clientId: this.id
         },
-        error: err,
+        error: err
       });
 
       await setTimeout(delay);
@@ -484,18 +538,18 @@ export class Producer extends RpcBaseClient {
 
     // 成功重新发送消息
     if (attempt > 1) {
-      const messageIds = sendReceipts.map((r) => r.messageId);
+      const messageIds = sendReceipts.map(r => r.messageId);
 
       this.logger.info({
-        message: "Resend message successfully",
+        message: 'Resend message successfully',
         context: {
           topic,
           messageIds,
           maxAttempts,
           attempt,
           endpoints,
-          clientId: this.id,
-        },
+          clientId: this.id
+        }
       });
     }
     // 首次尝试成功发送消息，直接返回。
@@ -548,7 +602,7 @@ export class Producer extends RpcBaseClient {
   #takeMessageQueues(loadBalancer: PublishingLoadBalancer) {
     return loadBalancer.takeMessageQueues(
       this.isolated,
-      this.#getRetryPolicy().getMaxAttempts(),
+      this.#getRetryPolicy().getMaxAttempts()
     );
   }
 

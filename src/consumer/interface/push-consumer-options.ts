@@ -1,6 +1,7 @@
 import { ConsumerOptions, FilterExpression } from '@/consumer';
 import { MessageListener } from '@/consumer/listener/message.listener';
 import { ILock } from '@/consumer/lock/consumer-lock';
+import Logger from '@/logger';
 
 /**
  * 推送消费者选项
@@ -51,4 +52,9 @@ export interface PushConsumerOptions extends ConsumerOptions {
    * 同步锁
    */
   locker?: ILock<unknown>;
+
+  /**
+   * 日志记录器
+   */
+  logger?: Logger;
 }

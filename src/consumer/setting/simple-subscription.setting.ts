@@ -1,6 +1,6 @@
 import {
-  Settings as SettingsPB,
   ClientType,
+  Settings as SettingsPB,
   Subscription
 } from '@/rpc/apache/rocketmq/v2/definition_pb';
 import { Endpoints } from '@/model';
@@ -77,9 +77,6 @@ export class SimpleSubscriptionSetting extends Setting {
    */
   sync(settings: SettingsPB): void {
     if (settings.getPubSubCase() !== SettingsPB.PubSubCase.SUBSCRIPTION) {
-      // log.error("[Bug] Issued settings not match with the client type, clientId={}, pubSubCase={}, "
-      //       + "clientType={}", clientId, pubSubCase, clientType);
-      // TODO：日志模块
       console.error(
         '[Bug] Issued settings not match with the client type, clientId={}, pubSubCase={}, clientType={}',
         this.clientId,

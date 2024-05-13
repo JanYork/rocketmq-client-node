@@ -6,6 +6,8 @@ import {
 import {
   Consumer,
   FilterExpression,
+  ILock,
+  MessageListener,
   PushConsumerOptions,
   PushSubscriptionSetting,
   SubscriptionLoadBalancer
@@ -13,9 +15,8 @@ import {
 import { MessageView } from '@/message';
 import { TopicRoute } from '@/model';
 import { createResource } from '@/util';
-import { MessageListener } from '@/consumer/listener/message.listener';
-import { MessageResult } from '@/enum/message.enum';
-import { ILock } from '@/consumer/lock/consumer-lock';
+import { MessageResult } from '@/enum';
+import Logger from '@/logger';
 
 /**
  * push消费者。
@@ -96,6 +97,9 @@ export class PushConsumer extends Consumer {
    */
   readonly #listener: MessageListener;
 
+  // 日志记录器
+  readonly #logger: Logger;
+
   constructor(options: PushConsumerOptions) {
     // 需要顺序但是不存在锁
     // if (options.isFifo && !options.locker) {
@@ -104,6 +108,8 @@ export class PushConsumer extends Consumer {
 
     options.topics = Array.from(options.subscriptions.keys());
     super(options);
+
+    this.#logger = options.logger;
 
     for (const [topic, filter] of options.subscriptions.entries()) {
       if (typeof filter === 'string') {
@@ -142,6 +148,14 @@ export class PushConsumer extends Consumer {
       this.isFifo,
       this.#locker
     );
+
+    this.#logger?.debug({
+      message: 'Push consumer created',
+      context: {
+        id: this.id,
+        setting: this.#pushSubscriptionSetting
+      }
+    });
   }
 
   /**
@@ -153,6 +167,15 @@ export class PushConsumer extends Consumer {
     // 开始持续长轮询拉取消息
     await this.consumeMessages();
     this.#listener?.onStart();
+    this.#logger?.debug({
+      message: 'Push consumer started',
+      context: {
+        id: this.id,
+        group: this.consumerGroup,
+        topics: this.topics,
+        isFifo: this.isFifo
+      }
+    });
   }
 
   /**
@@ -162,12 +185,24 @@ export class PushConsumer extends Consumer {
     this.isShutdown = true;
     await super.shutdown();
     this.#listener?.onStop();
+    this.#logger?.debug({
+      message: 'Push consumer stopped',
+      context: {
+        id: this.id,
+        group: this.consumerGroup,
+        topics: this.topics,
+        isFifo: this.isFifo
+      }
+    });
   }
 
   /**
    * 消费消息。
    */
   async consumeMessages() {
+    this.#logger?.debug({
+      message: 'Start polling to consume messages'
+    });
     try {
       const batchSize = this.isFifo
         ? this.maxMessageNum
@@ -206,8 +241,11 @@ export class PushConsumer extends Consumer {
         }
       }
     } catch (error) {
-      // TODO: 日志模块
-      console.error('An error occurred:', error);
+      this.#logger?.error({
+        message: 'An error occurred',
+        error
+      });
+
       this.#listener?.onError(error);
     } finally {
       // 释放锁
@@ -219,6 +257,9 @@ export class PushConsumer extends Consumer {
       );
 
       if (!this.isShutdown) {
+        this.#logger?.debug({
+          message: 'Continue polling to consume messages'
+        });
         await this.consumeMessages();
       }
     }
@@ -239,6 +280,9 @@ export class PushConsumer extends Consumer {
    * @protected
    */
   protected wrapHeartbeatRequest() {
+    this.#logger?.debug({
+      message: 'Wrap heartbeat request'
+    });
     return new HeartbeatRequest()
       .setClientType(ClientType.SIMPLE_CONSUMER)
       .setGroup(createResource(this.consumerGroup));
@@ -311,6 +355,13 @@ export class PushConsumer extends Consumer {
   async subscribe(topic: string, filterExpression: FilterExpression) {
     await this.getRoute(topic);
     this.#subscriptionExpressionMap.set(topic, filterExpression);
+    this.#logger?.debug({
+      message: 'Subscribe topic',
+      context: {
+        topic,
+        filterExpression
+      }
+    });
   }
 
   /**
@@ -320,6 +371,12 @@ export class PushConsumer extends Consumer {
    */
   unsubscribe(topic: string) {
     this.#subscriptionExpressionMap.delete(topic);
+    this.#logger?.debug({
+      message: 'Unsubscribe topic',
+      context: {
+        topic
+      }
+    });
   }
 
   /**
@@ -340,6 +397,17 @@ export class PushConsumer extends Consumer {
       invisibleDuration,
       this.#awaitDuration
     );
+    this.#logger?.debug({
+      message: 'Receive message',
+      context: {
+        topic,
+        filterExpression,
+        maxMessageNum,
+        invisibleDuration,
+        request
+      }
+    });
+
     return await this.receiveMessage(request, mq, this.#awaitDuration);
   }
 
