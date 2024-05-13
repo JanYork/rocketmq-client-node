@@ -1,12 +1,13 @@
 import {
-  Settings as SettingsPB,
   ClientType,
+  Settings as SettingsPB,
   Subscription
 } from '@/rpc/apache/rocketmq/v2/definition_pb';
 import { Endpoints } from '@/model';
 import { Setting, UserAgent } from '@/server/client';
 import { createDuration, createResource } from '@/util';
 import { FilterExpression } from '@/consumer';
+import { ILock } from '@/consumer/lock/consumer-lock';
 
 /**
  * 简单消费订阅设置。
@@ -41,6 +42,11 @@ export class PushSubscriptionSetting extends Setting {
    */
   isFifo: boolean;
 
+  /**
+   * 同步锁
+   */
+  locker?: ILock<unknown>;
+
   constructor(
     clientId: string,
     accessPoint: Endpoints,
@@ -49,7 +55,8 @@ export class PushSubscriptionSetting extends Setting {
     longPollingTimeout: number,
     subscriptionExpressions: Map<string, FilterExpression>,
     maxMessageNum: number,
-    isFifo: boolean
+    isFifo: boolean,
+    locker?: ILock<unknown>
   ) {
     super(clientId, ClientType.SIMPLE_CONSUMER, accessPoint, requestTimeout);
     this.longPollingTimeout = longPollingTimeout;
@@ -57,6 +64,7 @@ export class PushSubscriptionSetting extends Setting {
     this.subscriptionExpressions = subscriptionExpressions;
     this.maxMessageNum = maxMessageNum;
     this.isFifo = isFifo;
+    this.locker = locker;
   }
 
   /**
