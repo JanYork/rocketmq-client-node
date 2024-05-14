@@ -7,19 +7,6 @@
 - 统一的日志记录器注入，方便调试。
 
 ## 注意
-项目使用了`module-alias`，所以必须要在门面文件中引入`require('module-alias/register')`，并且在`tsconfig.json`中配置`baseUrl`和`paths`。
-
-```json
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
-  }
-}
-```
-
 对于Macos or Linux，`build`操作失败，可以尝试使用`sudo npm run build`。
 
 对于Windows，`build`操作失败，可以尝试使用“以管理员身份运行”命令行。
@@ -43,7 +30,7 @@ npm install
 # 初始化 grpc 代码
 npm run build
 # 安装rocketmq nodejs 客户端
-npm i rocketmq-grpc-client
+npm i rocketmq-grpc
 ```
 
 开启 grpc-js 的调试日志：
@@ -59,9 +46,7 @@ GRPC_TRACE=compression GRPC_VERBOSITY=debug GRPC_TRACE=all npm run xxx or node x
 发送消息
 
 ```ts
-require('module-alias/register');
-
-import { Producer } from '@/producer';
+import {Producer} from "rocketmq-grpc";
 
 const simpleProducer = new Producer({
   endpoints: 'localhost:8081'
@@ -87,14 +72,13 @@ console.log('checkout：simpleProducer init success!');
       });
   });
 })();
+
 ```
 
 消费消息
 
 ```ts
-require('module-alias/register');
-
-import { SimpleConsumer } from '@/consumer';
+import {SimpleConsumer} from "rocketmq-grpc";
 
 const consumer = new SimpleConsumer({
   consumerGroup: 'checkout-group',
@@ -155,7 +139,7 @@ async function startAndConsumeMessages() {
 
 startAndConsumeMessages().catch(console.error);
 ```
-更多的示例可以参考[这里](./src/examples)。
+更多的示例可以参考[这里](https://github.com/JanYork/rocketmq-client-node/tree/core/examples)。
 
 ### 消息类型
 
