@@ -6,3 +6,5 @@ nohup.out
 dist/
 coverage/
 .idea/
+
+!index.ts
