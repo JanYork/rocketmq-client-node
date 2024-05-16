@@ -17,7 +17,7 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["**/*"],
-  "exclude": ["node_modules", "dist", "tests", "**/*.test.ts", "**/*.spec.ts","examples"],
+  "exclude": ["node_modules", "dist"],
   "typeAcquisition": {
     "enable": true
   }
