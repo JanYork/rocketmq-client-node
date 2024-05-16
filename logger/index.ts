@@ -1,4 +1,4 @@
-import { ILogger, LogEntry } from '../interface/grpc-logger.interface';
+import { ILogger, LogEntry } from '../interface';
 import LogLevel from '../enum/logger.enum';
 import ConsoleLogger from './console.logger';
 

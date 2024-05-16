@@ -12,7 +12,7 @@ import { ILogger, LogEntry } from '../interface/grpc-logger.interface';
  */
 export default class ConsoleLogger implements ILogger {
   debug(entry: LogEntry): void {
-    console.log('DEBUG:', entry.message, this.formatContext(entry.context));
+    console.debug('DEBUG:', entry.message, this.formatContext(entry.context));
   }
 
   info(entry: LogEntry): void {
@@ -30,9 +30,6 @@ export default class ConsoleLogger implements ILogger {
       this.formatContext(entry.context),
       entry.error
     );
-    if (entry.error) {
-      throw entry.error;
-    }
   }
 
   private formatContext(context?: Record<string, unknown>): string {
