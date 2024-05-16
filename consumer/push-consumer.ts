@@ -95,8 +95,15 @@ export class PushConsumer extends Consumer {
    */
   readonly #listener: MessageListener;
 
-  // 日志记录器
+  /**
+   * 日志记录器
+   */
   readonly #logger: Logger;
+
+  /**
+   * 一个错误钩子，用于处理消费者内部错误
+   */
+  errorHook?: (error: Error) => void;
 
   constructor(options: PushConsumerOptions) {
     // 需要顺序但是不存在锁
@@ -108,6 +115,7 @@ export class PushConsumer extends Consumer {
     super(options);
 
     this.#logger = options.logger;
+    this.errorHook = options.errorHook;
 
     for (const [topic, filter] of options.subscriptions.entries()) {
       if (typeof filter === 'string') {
@@ -212,6 +220,7 @@ export class PushConsumer extends Consumer {
 
       if (batchSize >= 0 && !lock) {
         await this.#locker?.lock();
+        // TODO: 不可见时间
         const messages = await this.#receive(batchSize);
 
         if (messages.length > 0) {
@@ -221,19 +230,44 @@ export class PushConsumer extends Consumer {
           }
 
           for (const message of messages) {
-            // 如果是顺序消费，则同步执行ack
-            if (this.isFifo) {
-              const result = await this.#listener.onMessage(message);
-              if (result == MessageResult.SUCCESS) {
-                await this.#ack(message);
-              }
-            } else {
-              this.#listener.onMessage(message).then(async result => {
-                if (result == MessageResult.SUCCESS) {
+            try {
+              // 如果是顺序消费，则同步执行ack
+              if (this.isFifo) {
+                console.log('message=%o', message.body.toString());
+                const result = await this.#listener.onMessage(message);
+                console.log(
+                  'result=%o,message=%o',
+                  result,
+                  message.body.toString()
+                );
+                if (result === MessageResult.SUCCESS) {
                   await this.#ack(message);
-                  this.#asyncPullBatchSize++; // 异步 ack 成功后，增加一个空闲位置
                 }
+              } else {
+                this.#listener
+                  .onMessage(message)
+                  .then(async result => {
+                    if (result === MessageResult.SUCCESS) {
+                      await this.#ack(message);
+                      this.#asyncPullBatchSize++; // 异步 ack 成功后，增加一个空闲位置
+                    }
+                  })
+                  .catch(error => {
+                    this.#logger?.error({
+                      message: 'An error occurred during message processing',
+                      error
+                    });
+                    this.#listener?.onError?.(error);
+                    this.errorHook?.(error);
+                  });
+              }
+            } catch (error) {
+              this.#logger?.error({
+                message: 'An error occurred during FIFO message processing',
+                error
               });
+              this.#listener?.onError?.(error);
+              this.errorHook?.(error);
             }
           }
         }
@@ -244,7 +278,8 @@ export class PushConsumer extends Consumer {
         error
       });
 
-      this.#listener?.onError(error);
+      this.#listener?.onError?.(error);
+      this.errorHook?.(error);
     } finally {
       // 释放锁
       this.#locker?.unlock();

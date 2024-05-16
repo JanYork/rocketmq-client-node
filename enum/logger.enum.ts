@@ -6,11 +6,11 @@
  * @date 2024/5/6 下午4:38
  */
 enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
-  OFF = 4,
+  DEBUG = 1,
+  INFO = 2,
+  WARN = 3,
+  ERROR = 4,
+  OFF = 5
 }
 
 export default LogLevel;

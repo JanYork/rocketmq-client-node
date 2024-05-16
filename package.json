@@ -1,6 +1,6 @@
 {
   "name": "rocketmq-grpc",
-  "version": "0.2.3",
+  "version": "0.2.6",
   "author": "JanYork <747945307@qq.com>",
   "description": "基于RocketMQ-gRPC协议的自封装Node.js客户端",
   "license": "Apache-2.0",
@@ -21,6 +21,7 @@
   "scripts": {
     "gen-grpc": "chmod +x ./script/generate_grpc.sh && ./script/generate_grpc.sh",
     "build": "rm -rf lib && tsc && npm run gen-grpc",
+    "build-test": "rm -rf lib && tsc --project tsconfig.test.json && npm run gen-grpc",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint -p tsconfig.json --ext .ts src"
   },

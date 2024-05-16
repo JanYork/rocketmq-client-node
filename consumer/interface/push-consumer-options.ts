@@ -58,4 +58,9 @@ export interface PushConsumerOptions extends ConsumerOptions {
    * 日志记录器
    */
   logger?: Logger;
+
+  /**
+   * 一个错误钩子，用于处理消费者内部错误
+   */
+  errorHook?: (error: Error) => void;
 }
