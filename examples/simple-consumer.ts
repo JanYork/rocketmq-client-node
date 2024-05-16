@@ -14,35 +14,27 @@ const isShutdown = false;
 
 async function startAndConsumeMessages() {
   try {
-    // 启动消费者
     await consumer.startup();
-    console.log('checkout：consumer startup success!');
+    console.log('Consumer startup successful');
 
     async function consumeMessages() {
-      try {
-        const messages = await consumer.receive(20);
-
-        if (messages.length > 0) {
-          console.log('got %d messages', messages.length);
-
-          for (const message of messages) {
-            console.log('body=%o', message.body.toString());
-            await consumer.ack(message);
-            console.log('checkout：ack message success!');
+      while (!isShutdown) {
+        try {
+          const messages = await consumer.receive(20);
+          if (messages.length > 0) {
+            console.log('Got %d messages', messages.length);
+            for (const message of messages) {
+              console.log('Body=%o', message.body.toString());
+              await consumer.ack(message);
+              console.log('checkout：ack message success!');
+            }
+          } else {
+            console.log('No messages received, waiting...');
           }
-        } else {
-          console.log('No messages received, waiting...');
-        }
-      } catch (error) {
-        console.error('An error occurred:', error);
-      } finally {
-        // // 等待一段时间后递归调用consumeMessages
-        // await new Promise(resolve => setTimeout(resolve, 5000));
-
-        console.log('checkout：waiting for messages...');
-
-        if (!isShutdown) {
-          await consumeMessages();
+        } catch (error) {
+          console.error('the receive message error');
+        } finally {
+          console.log('checkout：waiting for messages...');
         }
       }
     }
@@ -50,10 +42,10 @@ async function startAndConsumeMessages() {
     // 开始消费消息
     await consumeMessages();
   } catch (error) {
-    console.error('An error occurred:', error);
+    console.error('An error occurred during startup');
   } finally {
     // 如果发生错误或者接收消息出现问题，可以选择重新启动消费者
-    // 在这里你可以添加相应的逻辑
+    console.log('Consumer is shutting down');
   }
 }
 

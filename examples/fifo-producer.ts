@@ -1,7 +1,11 @@
 import { Producer } from '../producer';
+import Logger from '../logger';
+import ConsoleLogger from '../logger/console.logger';
+import LogLevel from '../enum/logger.enum';
 
 const fifoProducer = new Producer({
-  endpoints: 'localhost:8081'
+  endpoints: 'localhost:8081',
+  logger: new Logger(new ConsoleLogger(), LogLevel.ERROR)
 });
 console.log('checkout：simpleProducer init success!');
 
@@ -14,7 +18,7 @@ console.log('checkout：simpleProducer init success!');
         messageGroup: 'checkout-group',
         topic: 'checkout-topic-fifo',
         tag: 'checkout',
-        keys: ['checkout-key'],
+        keys: [Date.now().toString()],
         body: Buffer.from(i.toString())
       });
 
