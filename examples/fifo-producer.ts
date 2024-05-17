@@ -7,16 +7,16 @@ const fifoProducer = new Producer({
   endpoints: 'localhost:8081',
   logger: new Logger(new ConsoleLogger(), LogLevel.ERROR)
 });
-console.log('checkout：simpleProducer init success!');
+console.log('checkout：fifoProducer init success!');
 
 (async () => {
   fifoProducer.startup().then(async () => {
-    console.log('checkout：simpleProducer startup success!');
+    console.log('checkout：fifoProducer startup success!');
 
     for (let i = 1; i <= 10; i++) {
       await fifoProducer.send({
-        messageGroup: 'checkout-group',
-        topic: 'checkout-topic-fifo',
+        messageGroup: 'checkout-fifo-group',
+        topic: 'checkout-fifo-topic',
         tag: 'checkout',
         keys: [Date.now().toString()],
         body: Buffer.from(i.toString())
