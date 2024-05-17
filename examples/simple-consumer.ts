@@ -8,14 +8,14 @@ const consumer = new SimpleConsumer({
   awaitDuration: 30000 // long polling
 });
 
-console.log('checkout：consumer init success!');
+console.log('checkout：SimpleConsumer init success!');
 
 const isShutdown = false;
 
 async function startAndConsumeMessages() {
   try {
     await consumer.startup();
-    console.log('Consumer startup successful');
+    console.log('SimpleConsumer startup successful');
 
     async function consumeMessages() {
       while (!isShutdown) {
@@ -45,7 +45,7 @@ async function startAndConsumeMessages() {
     console.error('An error occurred during startup');
   } finally {
     // 如果发生错误或者接收消息出现问题，可以选择重新启动消费者
-    console.log('Consumer is shutting down');
+    console.log('SimpleConsumer is shutting down');
   }
 }
 

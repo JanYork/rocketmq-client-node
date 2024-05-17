@@ -8,7 +8,7 @@ const consumer = new SimpleConsumer({
   awaitDuration: 30000 // long polling
 });
 
-console.log('checkout：consumer init success!');
+console.log('checkout：tran-consumer init success!');
 
 const isShutdown = false;
 
@@ -16,7 +16,7 @@ async function startAndConsumeMessages() {
   try {
     // 启动消费者
     await consumer.startup();
-    console.log('checkout：consumer startup success!');
+    console.log('checkout：tran-consumer startup success!');
 
     async function consumeMessages() {
       try {

@@ -2,9 +2,9 @@ import { MessageListener, PushConsumer } from '../consumer';
 import { MessageView } from '../message';
 import { MessageResult } from '../enum';
 
-class MessageListenerImpl implements MessageListener {
+class MessageListenerImplOne implements MessageListener {
   onMessage(message: MessageView): Promise<MessageResult> {
-    console.log('body=%o', message.body.toString());
+    console.log('one body=%o', message.body.toString());
     return Promise.resolve(MessageResult.SUCCESS);
   }
 
@@ -21,11 +21,30 @@ class MessageListenerImpl implements MessageListener {
   }
 }
 
-const consumer = new PushConsumer({
-  listener: new MessageListenerImpl(),
-  consumerGroup: 'checkout-group',
+class MessageListenerImplTwo implements MessageListener {
+  onMessage(message: MessageView): Promise<MessageResult> {
+    console.log('one body=%o', message.body.toString());
+    return Promise.resolve(MessageResult.SUCCESS);
+  }
+
+  onStart() {
+    console.log('start');
+  }
+
+  onStop() {
+    console.log('stop');
+  }
+
+  onError(error: Error) {
+    console.error(error);
+  }
+}
+
+const consumerOne = new PushConsumer({
+  listener: new MessageListenerImplOne(),
+  consumerGroup: 'checkout-fifo-group',
   endpoints: '192.168.1.162:8081',
-  subscriptions: new Map().set('checkout-topic-fifo', '*'),
+  subscriptions: new Map().set('checkout-fifo-topic', '*'),
   requestTimeout: 3000,
   awaitDuration: 30000,
   maxMessageNum: 5,
@@ -33,10 +52,41 @@ const consumer = new PushConsumer({
   isFifo: true
 });
 
-(async () => {
+const consumerTwo = new PushConsumer({
+  listener: new MessageListenerImplTwo(),
+  consumerGroup: 'checkout-fifo-group',
+  endpoints: '192.168.1.162:8081',
+  subscriptions: new Map().set('checkout-fifo-topic', '*'),
+  requestTimeout: 3000,
+  awaitDuration: 30000,
+  maxMessageNum: 5,
+  longPollingInterval: 300,
+  isFifo: true
+});
+
+// 运行单一消费者
+const runSingleConsumer = async () => {
   try {
-    await consumer.startup();
+    await consumerOne.startup();
   } catch (e) {
     console.error('start consumer error');
   }
-})();
+};
+
+// 运行多个消费者
+const runMultipleConsumer = async () => {
+  try {
+    await consumerOne.startup();
+    await consumerTwo.startup();
+  } catch (e) {
+    console.error('start consumer error');
+  }
+};
+
+if (process.argv[2] === 'multi=true') {
+  console.log('run multiple consumer');
+  runMultipleConsumer().catch(console.error);
+} else {
+  console.log('run single consumer');
+  runSingleConsumer().catch(console.error);
+}

@@ -3,13 +3,13 @@ import { Producer, Transaction } from '../producer';
 const simpleProducer = new Producer({
   endpoints: 'localhost:8081'
 });
-console.log('checkout：simpleProducer init success!');
+console.log('checkout：tran-producer init success!');
 
 (async () => {
   // 启动生产者
   await simpleProducer.startup();
 
-  console.log('checkout：simpleProducer startup success!');
+  console.log('checkout：tran-producer startup success!');
   const transaction = new Transaction(simpleProducer);
 
   // 发送消息
