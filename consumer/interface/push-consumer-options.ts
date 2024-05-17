@@ -60,6 +60,11 @@ export interface PushConsumerOptions extends ConsumerOptions {
   logger?: Logger;
 
   /**
+   * 消息不可见时长
+   */
+  invisibleDuration?: number;
+
+  /**
    * 一个错误钩子，用于处理消费者内部错误
    */
   errorHook?: (error: Error) => void;

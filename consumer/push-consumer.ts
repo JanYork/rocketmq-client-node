@@ -101,6 +101,11 @@ export class PushConsumer extends Consumer {
   readonly #logger: Logger;
 
   /**
+   * 消息不可见时间
+   */
+  readonly #invisibleDuration: number;
+
+  /**
    * 一个错误钩子，用于处理消费者内部错误
    */
   errorHook?: (error: Error) => void;
@@ -132,6 +137,7 @@ export class PushConsumer extends Consumer {
     this.#awaitDuration = options.awaitDuration ?? 30000;
     this.#listener = options.listener;
     this.isFifo = options.isFifo ?? false;
+    this.#invisibleDuration = options.invisibleDuration ?? 15000;
 
     if (options.isFifo) {
       this.maxMessageNum = 1;
@@ -152,6 +158,7 @@ export class PushConsumer extends Consumer {
       this.#subscriptionExpressionMap,
       this.maxMessageNum,
       this.isFifo,
+      this.#invisibleDuration,
       this.#locker
     );
 
@@ -220,8 +227,11 @@ export class PushConsumer extends Consumer {
 
       if (batchSize >= 0 && !lock) {
         await this.#locker?.lock();
-        // TODO: 不可见时间
-        const messages = await this.#receive(batchSize);
+
+        const messages = await this.#receive(
+          batchSize,
+          this.#invisibleDuration
+        );
 
         if (messages.length > 0) {
           if (!this.isFifo) {
@@ -233,13 +243,8 @@ export class PushConsumer extends Consumer {
             try {
               // 如果是顺序消费，则同步执行ack
               if (this.isFifo) {
-                console.log('message=%o', message.body.toString());
                 const result = await this.#listener.onMessage(message);
-                console.log(
-                  'result=%o,message=%o',
-                  result,
-                  message.body.toString()
-                );
+
                 if (result === MessageResult.SUCCESS) {
                   await this.#ack(message);
                 }

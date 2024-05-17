@@ -43,6 +43,11 @@ export class PushSubscriptionSetting extends Setting {
   isFifo: boolean;
 
   /**
+   * 消息不可见时间
+   */
+  invisibleDuration: number;
+
+  /**
    * 同步锁
    */
   locker?: ILock<unknown>;
@@ -56,6 +61,7 @@ export class PushSubscriptionSetting extends Setting {
     subscriptionExpressions: Map<string, FilterExpression>,
     maxMessageNum: number,
     isFifo: boolean,
+    invisibleDuration: number,
     locker?: ILock<unknown>
   ) {
     super(clientId, ClientType.SIMPLE_CONSUMER, accessPoint, requestTimeout);
@@ -64,6 +70,7 @@ export class PushSubscriptionSetting extends Setting {
     this.subscriptionExpressions = subscriptionExpressions;
     this.maxMessageNum = maxMessageNum;
     this.isFifo = isFifo;
+    this.invisibleDuration = invisibleDuration;
     this.locker = locker;
   }
 
