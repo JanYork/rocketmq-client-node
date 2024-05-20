@@ -4,7 +4,6 @@ import {
   Subscription
 } from '../../rpc/apache/rocketmq/v2/definition_pb';
 import { Setting, UserAgent } from '../../client';
-import { ILock } from '../lock/consumer-lock';
 import { createDuration, createResource } from '../../util';
 import { FilterExpression } from '../filter-expression';
 import { Endpoints } from '../../model';
@@ -47,31 +46,31 @@ export class PushSubscriptionSetting extends Setting {
    */
   invisibleDuration: number;
 
-  /**
-   * 同步锁
-   */
-  locker?: ILock<unknown>;
-
   constructor(
     clientId: string,
     accessPoint: Endpoints,
     group: string,
+    namespace: string,
     requestTimeout: number,
     longPollingTimeout: number,
     subscriptionExpressions: Map<string, FilterExpression>,
     maxMessageNum: number,
     isFifo: boolean,
-    invisibleDuration: number,
-    locker?: ILock<unknown>
+    invisibleDuration: number
   ) {
-    super(clientId, ClientType.SIMPLE_CONSUMER, accessPoint, requestTimeout);
+    super(
+      clientId,
+      ClientType.SIMPLE_CONSUMER,
+      accessPoint,
+      namespace,
+      requestTimeout
+    );
     this.longPollingTimeout = longPollingTimeout;
     this.group = group;
     this.subscriptionExpressions = subscriptionExpressions;
     this.maxMessageNum = maxMessageNum;
     this.isFifo = isFifo;
     this.invisibleDuration = invisibleDuration;
-    this.locker = locker;
   }
 
   /**

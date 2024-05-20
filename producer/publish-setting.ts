@@ -39,6 +39,7 @@ export class PublishingSetting extends Setting {
    *
    * @param clientId 客户端ID。
    * @param accessPoint 网络访问点。
+   * @param namespace 命名空间。
    * @param retryPolicy 重试策略。
    * @param requestTimeout 请求超时时间，单位为毫秒。
    * @param topics 订阅的主题集合。
@@ -46,6 +47,7 @@ export class PublishingSetting extends Setting {
   constructor(
     clientId: string,
     accessPoint: Endpoints,
+    namespace: string,
     retryPolicy: ExponentialBackoffRetryPolicy,
     requestTimeout: number,
     topics: Set<string>
@@ -54,6 +56,7 @@ export class PublishingSetting extends Setting {
       clientId,
       ClientType.PRODUCER,
       accessPoint,
+      namespace,
       requestTimeout,
       retryPolicy
     );
@@ -90,6 +93,7 @@ export class PublishingSetting extends Setting {
 
     for (const topic of this.#topics) {
       publishing.addTopics().setName(topic);
+      publishing.addTopics().setResourceNamespace(this.namespace);
     }
 
     return new SettingsPB()

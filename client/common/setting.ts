@@ -34,6 +34,11 @@ export abstract class Setting {
   protected readonly accessPoint: Endpoints;
 
   /**
+   * 客户端命名空间
+   */
+  protected readonly namespace: string;
+
+  /**
    * 重试策略，可选，用于操作失败时的重试逻辑
    * @protected
    */
@@ -51,6 +56,7 @@ export abstract class Setting {
    * @param clientId 客户端的唯一标识符。
    * @param clientType 客户端的类型（例如：生产者、消费者）。
    * @param accessPoint 定义如何连接到消息系统的网络访问点。
+   * @param namespace 定义客户端的命名空间。
    * @param requestTimeout 定义请求的超时时间，以毫秒计。
    * @param retryPolicy 定义操作失败时的重试策略，可选。
    */
@@ -58,11 +64,13 @@ export abstract class Setting {
     clientId: string,
     clientType: ClientType,
     accessPoint: Endpoints,
+    namespace: string,
     requestTimeout: number,
     retryPolicy?: RetryPolicy
   ) {
     this.clientId = clientId;
     this.clientType = clientType;
+    this.namespace = namespace;
     this.accessPoint = accessPoint;
     this.retryPolicy = retryPolicy;
     this.requestTimeout = requestTimeout;

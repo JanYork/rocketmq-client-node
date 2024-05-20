@@ -73,6 +73,7 @@ export class Producer extends RpcBaseClient {
     this.#publishingSetting = new PublishingSetting(
       this.id,
       this.endpoints,
+      options.namespace,
       retryPolicy,
       this.requestTimeout,
       this.topics
@@ -132,7 +133,9 @@ export class Producer extends RpcBaseClient {
     const request = new EndTransactionRequest()
       .setMessageId(messageId)
       .setTransactionId(transactionId)
-      .setTopic(createResource(message.topic))
+      .setTopic(
+        createResource(message.topic).setResourceNamespace(this.namespace)
+      )
       .setResolution(resolution);
 
     const response = await this.manager.endTransaction(
@@ -383,7 +386,11 @@ export class Producer extends RpcBaseClient {
     const request = new SendMessageRequest();
 
     for (const pubMessage of pubMessages) {
-      request.addMessages(pubMessage.toProtobuf(mq));
+      if (this.namespace) {
+        request.addMessages(pubMessage.toProtobuf(this.namespace, mq));
+      } else {
+        request.addMessages(pubMessage.toProtobuf('', mq));
+      }
     }
 
     return request;

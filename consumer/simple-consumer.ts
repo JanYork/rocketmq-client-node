@@ -68,6 +68,7 @@ export class SimpleConsumer extends Consumer {
       this.id,
       this.endpoints,
       this.consumerGroup,
+      this.namespace ?? '',
       this.requestTimeout,
       this.#awaitDuration,
       this.#subscriptionExpressionMap

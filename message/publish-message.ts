@@ -72,7 +72,7 @@ export class PublishMessage extends Message {
    * @param {MessageQueue} mq - 消息队列。
    * @return {MessagePB} Protobuf消息格式。
    */
-  toProtobuf(mq: MessageQueue): MessagePB {
+  toProtobuf(namespace: string, mq: MessageQueue): MessagePB {
     const systemProperties = new SystemProperties()
       .setKeysList(this.keys)
       .setMessageId(this.messageId)
@@ -95,9 +95,12 @@ export class PublishMessage extends Message {
       systemProperties.setMessageGroup(this.messageGroup);
     }
 
+    const resource = createResource(this.topic);
+    resource.setResourceNamespace(namespace);
+
     // 构建Protobuf消息
     const message = new MessagePB()
-      .setTopic(createResource(this.topic))
+      .setTopic(resource)
       .setBody(this.body)
       .setSystemProperties(systemProperties);
 

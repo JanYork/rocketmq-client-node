@@ -35,11 +35,18 @@ export class SimpleSubscriptionSetting extends Setting {
     clientId: string,
     accessPoint: Endpoints,
     group: string,
+    namespace: string,
     requestTimeout: number,
     longPollingTimeout: number,
     subscriptionExpressions: Map<string, FilterExpression>
   ) {
-    super(clientId, ClientType.SIMPLE_CONSUMER, accessPoint, requestTimeout);
+    super(
+      clientId,
+      ClientType.SIMPLE_CONSUMER,
+      accessPoint,
+      namespace,
+      requestTimeout
+    );
     this.longPollingTimeout = longPollingTimeout;
     this.group = group;
     this.subscriptionExpressions = subscriptionExpressions;

@@ -6,7 +6,6 @@ import {
 import { Consumer } from './consumer';
 import { PushSubscriptionSetting } from './setting/push-subscription.setting';
 import { SubscriptionLoadBalancer } from './subscription-load-balancer';
-import { ILock } from './lock/consumer-lock';
 import { MessageListener } from './listener/message.listener';
 import Logger from '../logger';
 import { PushConsumerOptions } from './interface/push-consumer-options';
@@ -85,9 +84,9 @@ export class PushConsumer extends Consumer {
   #asyncPullBatchSize: number;
 
   /**
-   * 锁对象
+   * 锁对象，预留该机制，以后可能要用到，消息顺序无需锁
    */
-  readonly #locker: ILock<unknown>;
+  // readonly #locker: ILock<unknown>;
 
   /**
    * 消息监听器
@@ -111,11 +110,6 @@ export class PushConsumer extends Consumer {
   errorHook?: (error: Error) => void;
 
   constructor(options: PushConsumerOptions) {
-    // 需要顺序但是不存在锁
-    // if (options.isFifo && !options.locker) {
-    //   throw new Error('FIFO mode requires locker');
-    // }
-
     options.topics = Array.from(options.subscriptions.keys());
     super(options);
 
@@ -147,19 +141,20 @@ export class PushConsumer extends Consumer {
 
     this.#asyncPullBatchSize = this.maxMessageNum;
     this.#longPollingInterval = options.longPollingInterval ?? 1000;
-    this.#locker = options.locker;
+    // this.#locker = options.locker;
 
     this.#pushSubscriptionSetting = new PushSubscriptionSetting(
       this.id,
       this.endpoints,
       this.consumerGroup,
+      this.namespace ?? '',
       this.requestTimeout,
       this.#awaitDuration,
       this.#subscriptionExpressionMap,
       this.maxMessageNum,
       this.isFifo,
-      this.#invisibleDuration,
-      this.#locker
+      this.#invisibleDuration
+      // this.#locker
     );
 
     this.#logger?.debug({
@@ -221,13 +216,7 @@ export class PushConsumer extends Consumer {
         ? this.maxMessageNum
         : this.#asyncPullBatchSize;
 
-      // 强一致性，FIFO 模式下，只有上一批消息全部处理完毕后，才能继续拉取消息，主要是解决分布式问题，单机模式下实则默认保证了顺序
-      const lock =
-        this.isFifo && this.#locker ? this.#locker.isLocked() : false;
-
-      if (batchSize >= 0 && !lock) {
-        await this.#locker?.lock();
-
+      if (batchSize >= 0) {
         const messages = await this.#receive(
           batchSize,
           this.#invisibleDuration
@@ -286,9 +275,6 @@ export class PushConsumer extends Consumer {
       this.#listener?.onError?.(error);
       this.errorHook?.(error);
     } finally {
-      // 释放锁
-      this.#locker?.unlock();
-
       // 为了缓解服务器压力，等待一段时间后再次拉取消息
       await new Promise(resolve =>
         setTimeout(resolve, this.#longPollingInterval)
