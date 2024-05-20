@@ -4,6 +4,7 @@ import ConsoleLogger from '../logger/console.logger';
 import LogLevel from '../enum/logger.enum';
 
 const fifoProducer = new Producer({
+  namespace: 'checkout',
   endpoints: 'localhost:8081',
   logger: new Logger(new ConsoleLogger(), LogLevel.ERROR)
 });

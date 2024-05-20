@@ -58,6 +58,11 @@ export abstract class RpcBaseClient {
   readonly sslEnabled: boolean;
 
   /**
+   * 命名空间
+   */
+  readonly namespace: string;
+
+  /**
    * 会话凭证
    * @private
    */
@@ -133,6 +138,7 @@ export abstract class RpcBaseClient {
     this.logger =
       options.logger ?? new Logger(new ConsoleLogger(), LogLevel.INFO);
     this.sslEnabled = options.sslEnabled === true;
+    this.namespace = options.namespace;
     this.endpoints = new Endpoints(options.endpoints);
     this.#sessionCredential = options.sessionCredential;
     // 关于规约，请阅读：https://rocketmq.apache.org/docs/introduction/03limits/
@@ -469,6 +475,11 @@ export abstract class RpcBaseClient {
     metadata.set('x-mq-language', 'HTTP');
     // 客户端版本
     metadata.set('x-mq-client-version', UserAgent.INSTANCE.version);
+
+    // 客户端命名空间
+    if (this.namespace) {
+      metadata.set('x-mq-namespace', this.namespace);
+    }
 
     if (this.#sessionCredential) {
       if (this.#sessionCredential.securityToken) {

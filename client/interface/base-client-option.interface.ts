@@ -26,6 +26,11 @@ export interface BaseClientOption {
   endpoints: string;
 
   /**
+   * 命名空间
+   */
+  namespace?: string;
+
+  /**
    * 会话凭证，如果启用了 SSL，必须提供会话凭证
    */
   sessionCredential?: ISessionCredential;

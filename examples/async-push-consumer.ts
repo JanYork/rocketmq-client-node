@@ -4,8 +4,19 @@ import { MessageResult } from '../enum';
 
 class MessageListenerImplOne implements MessageListener {
   onMessage(message: MessageView): Promise<MessageResult> {
-    console.log('one body=%o', message.body.toString());
-    return Promise.resolve(MessageResult.SUCCESS);
+    // 随机延迟1-1.5秒
+    const delay = Math.floor(Math.random() * 500) + 1000;
+    return new Promise(resolve => {
+      setTimeout(() => {
+        console.log(
+          'one body=%o',
+          message.body.toString(),
+          new Date().toLocaleTimeString('zh-CN', { hour12: false })
+        );
+        resolve(MessageResult.SUCCESS);
+      }, delay);
+    });
+    // return Promise.resolve(MessageResult.SUCCESS);
   }
 
   onStart() {
@@ -41,6 +52,7 @@ class MessageListenerImplTwo implements MessageListener {
 }
 
 const consumerOne = new PushConsumer({
+  namespace: 'checkout',
   listener: new MessageListenerImplOne(),
   consumerGroup: 'checkout-fifo-group',
   endpoints: '192.168.1.162:8081',
@@ -53,6 +65,7 @@ const consumerOne = new PushConsumer({
 });
 
 const consumerTwo = new PushConsumer({
+  namespace: 'checkout',
   listener: new MessageListenerImplTwo(),
   consumerGroup: 'checkout-fifo-group',
   endpoints: '192.168.1.162:8081',
