@@ -1,6 +1,6 @@
 {
   "name": "rocketmq-grpc",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "author": "JanYork <747945307@qq.com>",
   "description": "基于RocketMQ-gRPC协议的自封装Node.js客户端",
   "license": "Apache-2.0",

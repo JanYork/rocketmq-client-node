@@ -5,7 +5,7 @@ import { MessageResult } from '../enum';
 class MessageListenerImplOne implements MessageListener {
   onMessage(message: MessageView): Promise<MessageResult> {
     // 随机延迟1-1.5秒
-    const delay = Math.floor(Math.random() * 500) + 1000;
+    const delay = Math.floor(Math.random() * 100) + 300;
     return new Promise(resolve => {
       setTimeout(() => {
         console.log(

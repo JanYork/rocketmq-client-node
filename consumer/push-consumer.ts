@@ -172,9 +172,7 @@ export class PushConsumer extends Consumer {
   async startup() {
     // 启动消费者
     await super.startup();
-    // 开始持续长轮询拉取消息
-    await this.consumeMessages();
-    this.#listener?.onStart();
+
     this.#logger?.debug({
       message: 'Push consumer started',
       context: {
@@ -183,6 +181,18 @@ export class PushConsumer extends Consumer {
         topics: this.topics,
         isFifo: this.isFifo
       }
+    });
+
+    this.#listener?.onStart();
+
+    // 开始持续长轮询拉取消息
+    this.consumeMessages().catch(error => {
+      this.#logger?.error({
+        message: 'An error occurred during message consumption',
+        error
+      });
+      this.#listener?.onError?.(error);
+      this.errorHook?.(error);
     });
   }
 
@@ -211,6 +221,7 @@ export class PushConsumer extends Consumer {
     this.#logger?.debug({
       message: 'Start polling to consume messages'
     });
+
     try {
       const batchSize = this.isFifo
         ? this.maxMessageNum
