@@ -1,6 +1,6 @@
 import { ILogger, LogEntry } from '../interface';
 import LogLevel from '../enum/logger.enum';
-import ConsoleLogger from './console.logger';
+import { ConsoleLogger } from './console.logger';
 
 /**
  * 消息日志记录器
@@ -9,7 +9,7 @@ import ConsoleLogger from './console.logger';
  * @email <747945307@qq.com>
  * @date 2024/5/6 下午4:26
  */
-export default class Logger {
+export class Logger {
   /**
    * 记录器实例
    * @private

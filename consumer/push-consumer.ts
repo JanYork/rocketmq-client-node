@@ -7,7 +7,7 @@ import { Consumer } from './consumer';
 import { PushSubscriptionSetting } from './setting/push-subscription.setting';
 import { SubscriptionLoadBalancer } from './subscription-load-balancer';
 import { MessageListener } from './listener/message.listener';
-import Logger from '../logger';
+import { Logger } from '../logger';
 import { PushConsumerOptions } from './interface/push-consumer-options';
 import { MessageResult } from '../enum';
 import { createResource } from '../util';

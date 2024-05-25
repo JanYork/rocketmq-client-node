@@ -1,5 +1,5 @@
 import { ISessionCredential } from './session-credential.interface';
-import Logger from '../../logger';
+import { Logger } from '../../logger';
 
 /**
  * RocketMQ 客户端基本配置参数

@@ -1,6 +1,6 @@
 import { MessageListener } from '../listener/message.listener';
 import { ILock } from '../lock/consumer-lock';
-import Logger from '../../logger';
+import { Logger } from '../../logger';
 import { ConsumerOptions } from './consumer-options';
 import { FilterExpression } from '../filter-expression';
 

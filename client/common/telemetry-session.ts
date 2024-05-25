@@ -1,7 +1,7 @@
 import { ClientDuplexStream } from '@grpc/grpc-js';
 import { TelemetryCommand } from '../../rpc/apache/rocketmq/v2/service_pb';
 import { RpcBaseClient } from '../rpc-base-client';
-import Logger from '../../logger';
+import { Logger } from '../../logger';
 import { Endpoints } from '../../model';
 
 /**

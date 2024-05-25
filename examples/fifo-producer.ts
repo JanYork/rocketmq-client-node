@@ -1,6 +1,6 @@
 import { Producer } from '../producer';
-import Logger from '../logger';
-import ConsoleLogger from '../logger/console.logger';
+import { Logger } from '../logger';
+import { ConsoleLogger } from '../logger/console.logger';
 import LogLevel from '../enum/logger.enum';
 
 const fifoProducer = new Producer({

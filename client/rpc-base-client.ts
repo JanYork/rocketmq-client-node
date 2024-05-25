@@ -19,14 +19,14 @@ import {
 import { ClientFlagHelper } from './common/client-flag.helper';
 import { BaseClientOption, ISessionCredential } from './interface';
 import { Endpoints, TopicRoute } from '../model';
-import Logger from '../logger';
+import { Logger } from '../logger';
 import { RpcClientManger } from './rpc-client-manger';
 import { TelemetrySession } from './common/telemetry-session';
 import { createResource, getRequestDateTime, sign } from '../util';
 import { ClientException, StatusChecker } from '../exception';
 import { UserAgent } from './common/user-agent';
 import { Setting } from './common/setting';
-import ConsoleLogger from '../logger/console.logger';
+import { ConsoleLogger } from '../logger/console.logger';
 import LogLevel from '../enum/logger.enum';
 
 /**

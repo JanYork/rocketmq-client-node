@@ -1,4 +1,4 @@
-import { ILogger, LogEntry } from '../interface/grpc-logger.interface';
+import { ILogger, LogEntry } from '../interface';
 
 /**
  * 控制台日志记录器
@@ -10,7 +10,7 @@ import { ILogger, LogEntry } from '../interface/grpc-logger.interface';
  * @email <747945307@qq.com>
  * @date 2024/5/6 下午4:27
  */
-export default class ConsoleLogger implements ILogger {
+export class ConsoleLogger implements ILogger {
   debug(entry: LogEntry): void {
     console.debug('DEBUG:', entry.message, this.formatContext(entry.context));
   }
